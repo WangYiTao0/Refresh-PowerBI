@@ -953,8 +953,8 @@
             }, 150); // 150ms延迟，短于点击但足够区分拖动意图
         });
 
-        // 全局鼠标释放事件（处理拖动延时期间的释放）
-        document.addEventListener('mouseup', function(e) {
+        // 指示器特定的鼠标释放事件（处理拖动延时期间的释放）
+        indicator.addEventListener('mouseup', function(e) {
             // 清除拖动延时
             if (dragTimeout) {
                 clearTimeout(dragTimeout);
@@ -1017,10 +1017,8 @@
         indicator.title = '点击打开 Power BI 自动刷新设置';
         indicator.textContent = '🔄';
 
-        // 绑定点击事件
+        // 绑定点击事件（移除阻止默认行为，避免干扰拖动）
         indicator.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
             console.log('✅ 状态指示器被点击');
             
             try {
