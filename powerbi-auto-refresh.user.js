@@ -735,9 +735,9 @@
                 console.error('❌ 事件绑定失败:', eventError);
             }
 
-            // 添加拖动功能 - 临时禁用
-            // makePanelDraggable(panel);
-            console.log('⚠️ 面板拖动功能已临时禁用用于调试');
+            // 添加拖动功能
+            makePanelDraggable(panel);
+            console.log('✅ 面板拖动功能已启用');
 
             // 点击面板外部关闭 - 使用setTimeout避免立即触发
             setTimeout(() => {
@@ -1053,9 +1053,9 @@
         // 保存指示器元素引用
         indicatorElement = indicator;
         
-        // 为状态指示器添加拖动功能 - 临时禁用以测试
-        // makeIndicatorDraggable(indicator);
-        console.log('⚠️ 拖动功能已临时禁用用于调试');
+        // 为状态指示器添加拖动功能
+        makeIndicatorDraggable(indicator);
+        console.log('✅ 状态指示器拖动功能已启用');
         
         // 初始化时检查全屏状态
         checkFullscreenStatus();
