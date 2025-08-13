@@ -214,12 +214,14 @@
     function makePanelDraggable(panel) {
         const header = panel.querySelector('#panel-header');
         let isDragging = false;
-        let currentX = 0;
-        let currentY = 0;
         let initialX = 0;
         let initialY = 0;
         let xOffset = 0;
         let yOffset = 0;
+        
+        // 事件处理函数
+        let mouseMoveHandler = null;
+        let mouseUpHandler = null;
 
         // 鼠标按下事件
         header.addEventListener('mousedown', function(e) {
@@ -244,59 +246,77 @@
                 panel.style.transform = 'scale(1.02)';
                 
                 console.log('开始拖动面板');
-            }
-        });
+                
+                // 动态创建鼠标移动事件处理函数
+                mouseMoveHandler = function(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        
+                        // 计算新位置（鼠标位置减去点击时的相对偏移）
+                        const currentX = e.clientX - initialX;
+                        const currentY = e.clientY - initialY;
 
-        // 鼠标移动事件
-        document.addEventListener('mousemove', function(e) {
-            if (isDragging) {
-                e.preventDefault();
-                
-                // 计算新位置（鼠标位置减去点击时的相对偏移）
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
+                        // 获取窗口尺寸
+                        const windowWidth = window.innerWidth;
+                        const windowHeight = window.innerHeight;
+                        const panelRect = panel.getBoundingClientRect();
 
-                // 获取窗口尺寸
-                const windowWidth = window.innerWidth;
-                const windowHeight = window.innerHeight;
-                const panelRect = panel.getBoundingClientRect();
+                        // 限制拖动范围，防止拖出屏幕
+                        const maxX = windowWidth - panelRect.width;
+                        const maxY = windowHeight - panelRect.height;
+                        
+                        const constrainedX = Math.max(0, Math.min(currentX, maxX));
+                        const constrainedY = Math.max(0, Math.min(currentY, maxY));
 
-                // 限制拖动范围，防止拖出屏幕
-                const maxX = windowWidth - panelRect.width;
-                const maxY = windowHeight - panelRect.height;
+                        // 应用位置
+                        panel.style.left = constrainedX + 'px';
+                        panel.style.top = constrainedY + 'px';
+                        panel.style.right = 'auto'; // 取消right定位
+                        
+                        // 更新偏移量
+                        xOffset = constrainedX;
+                        yOffset = constrainedY;
+                    }
+                };
                 
-                const constrainedX = Math.max(0, Math.min(currentX, maxX));
-                const constrainedY = Math.max(0, Math.min(currentY, maxY));
-
-                // 应用位置
-                panel.style.left = constrainedX + 'px';
-                panel.style.top = constrainedY + 'px';
-                panel.style.right = 'auto'; // 取消right定位
+                // 动态创建鼠标释放事件处理函数
+                mouseUpHandler = function(e) {
+                    console.log('面板鼠标释放事件触发，isDragging:', isDragging);
+                    
+                    if (isDragging) {
+                        isDragging = false;
+                        
+                        // 恢复样式
+                        panel.style.transition = 'all 0.3s ease';
+                        panel.style.cursor = 'default';
+                        header.style.cursor = 'move';
+                        panel.style.opacity = '1';
+                        panel.style.transform = 'scale(1)';
+                        
+                        console.log('结束拖动面板');
+                        
+                        // 保存面板位置
+                        const rect = panel.getBoundingClientRect();
+                        GM_setValue('panelX', rect.left);
+                        GM_setValue('panelY', rect.top);
+                        
+                        // 清理事件监听器
+                        if (mouseMoveHandler) {
+                            document.removeEventListener('mousemove', mouseMoveHandler);
+                            mouseMoveHandler = null;
+                        }
+                        if (mouseUpHandler) {
+                            document.removeEventListener('mouseup', mouseUpHandler);
+                            mouseUpHandler = null;
+                        }
+                        
+                        console.log('面板拖动事件监听器已清理');
+                    }
+                };
                 
-                // 更新偏移量
-                xOffset = constrainedX;
-                yOffset = constrainedY;
-            }
-        });
-
-        // 鼠标释放事件
-        document.addEventListener('mouseup', function(e) {
-            if (isDragging) {
-                isDragging = false;
-                
-                // 恢复样式
-                panel.style.transition = 'all 0.3s ease';
-                panel.style.cursor = 'default';
-                header.style.cursor = 'move';
-                panel.style.opacity = '1';
-                panel.style.transform = 'scale(1)';
-                
-                console.log('结束拖动面板');
-                
-                // 保存面板位置
-                const rect = panel.getBoundingClientRect();
-                GM_setValue('panelX', rect.left);
-                GM_setValue('panelY', rect.top);
+                // 添加事件监听器
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
             }
         });
 
@@ -663,10 +683,12 @@
         let dragTimeout = null;
         let initialX = 0;
         let initialY = 0;
-        let currentX = 0;
-        let currentY = 0;
         let xOffset = 0;
         let yOffset = 0;
+        
+        // 事件处理函数
+        let mouseMoveHandler = null;
+        let mouseUpHandler = null;
 
         // 鼠标按下事件
         indicator.addEventListener('mousedown', function(e) {
@@ -699,70 +721,88 @@
                 indicator.style.transition = 'none'; // 拖动时禁用过渡动画
                 
                 console.log('开始拖动状态指示器');
+                
+                // 动态创建鼠标移动事件处理函数
+                mouseMoveHandler = function(e) {
+                    if (isDragging) {
+                        e.preventDefault();
+                        
+                        // 计算新位置（鼠标位置减去点击时的相对偏移）
+                        const currentX = e.clientX - initialX;
+                        const currentY = e.clientY - initialY;
+
+                        // 获取窗口尺寸和指示器尺寸
+                        const windowWidth = window.innerWidth;
+                        const windowHeight = window.innerHeight;
+                        const indicatorSize = 50; // 指示器尺寸
+
+                        // 限制拖动范围，防止拖出屏幕
+                        const constrainedX = Math.max(0, Math.min(currentX, windowWidth - indicatorSize));
+                        const constrainedY = Math.max(0, Math.min(currentY, windowHeight - indicatorSize));
+
+                        // 应用位置
+                        indicator.style.left = constrainedX + 'px';
+                        indicator.style.top = constrainedY + 'px';
+                        indicator.style.right = 'auto';
+                        
+                        // 更新偏移量
+                        xOffset = constrainedX;
+                        yOffset = constrainedY;
+                    }
+                };
+                
+                // 动态创建鼠标释放事件处理函数
+                mouseUpHandler = function(e) {
+                    console.log('鼠标释放事件触发，isDragging:', isDragging);
+                    
+                    if (isDragging) {
+                        isDragging = false;
+                        
+                        // 恢复样式
+                        indicator.style.transition = 'all 0.3s ease'; // 恢复过渡动画
+                        indicator.style.opacity = '1';
+                        indicator.style.transform = 'scale(1)';
+                        indicator.style.cursor = 'pointer';
+                        indicator.style.zIndex = '9999';
+                        
+                        console.log('结束拖动状态指示器');
+                        
+                        // 保存指示器位置
+                        const rect = indicator.getBoundingClientRect();
+                        GM_setValue('indicatorX', rect.left);
+                        GM_setValue('indicatorY', rect.top);
+                        
+                        console.log('保存指示器位置:', rect.left, rect.top);
+                        
+                        // 清理事件监听器
+                        if (mouseMoveHandler) {
+                            document.removeEventListener('mousemove', mouseMoveHandler);
+                            mouseMoveHandler = null;
+                        }
+                        if (mouseUpHandler) {
+                            document.removeEventListener('mouseup', mouseUpHandler);
+                            mouseUpHandler = null;
+                        }
+                        
+                        console.log('拖动事件监听器已清理');
+                    }
+                };
+                
+                // 添加事件监听器
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+                
             }, 150); // 150ms延迟，短于点击但足够区分拖动意图
         });
 
-        // 鼠标移动事件
-        document.addEventListener('mousemove', function(e) {
-            if (isDragging) {
-                e.preventDefault();
-                
-                // 计算新位置（鼠标位置减去点击时的相对偏移）
-                currentX = e.clientX - initialX;
-                currentY = e.clientY - initialY;
-
-                // 获取窗口尺寸和指示器尺寸
-                const windowWidth = window.innerWidth;
-                const windowHeight = window.innerHeight;
-                const indicatorSize = 50; // 指示器尺寸
-
-                // 限制拖动范围，防止拖出屏幕
-                const constrainedX = Math.max(0, Math.min(currentX, windowWidth - indicatorSize));
-                const constrainedY = Math.max(0, Math.min(currentY, windowHeight - indicatorSize));
-
-                // 应用位置
-                indicator.style.left = constrainedX + 'px';
-                indicator.style.top = constrainedY + 'px';
-                indicator.style.right = 'auto';
-                
-                // 更新偏移量
-                xOffset = constrainedX;
-                yOffset = constrainedY;
-            }
-        });
-
-        // 鼠标释放事件
+        // 全局鼠标释放事件（处理拖动延时期间的释放）
         document.addEventListener('mouseup', function(e) {
             // 清除拖动延时
             if (dragTimeout) {
                 clearTimeout(dragTimeout);
                 dragTimeout = null;
+                console.log('清除拖动延时 - 这是点击操作');
                 return; // 如果还在延时期间，说明是点击而不是拖动
-            }
-
-            if (isDragging) {
-                isDragging = false;
-                
-                // 恢复样式
-                indicator.style.transition = 'all 0.3s ease'; // 恢复过渡动画
-                indicator.style.opacity = '1';
-                indicator.style.transform = 'scale(1)';
-                indicator.style.cursor = 'pointer';
-                indicator.style.zIndex = '9999';
-                
-                console.log('结束拖动状态指示器');
-                
-                // 保存指示器位置
-                const rect = indicator.getBoundingClientRect();
-                GM_setValue('indicatorX', rect.left);
-                GM_setValue('indicatorY', rect.top);
-                
-                console.log('保存指示器位置:', rect.left, rect.top);
-                
-                // 防止触发点击事件
-                setTimeout(() => {
-                    indicator.style.pointerEvents = 'auto';
-                }, 50);
             }
         });
 

@@ -66,49 +66,78 @@
                 indicator.style.transition = 'none';
                 
                 console.log('开始拖动测试指示器');
+                
+                // 开始拖动时添加事件监听器
+                startDrag();
             }, 150);
         });
 
-        // 鼠标移动
-        document.addEventListener('mousemove', function(e) {
-            if (isDragging) {
-                e.preventDefault();
+        // 事件处理函数
+        let mouseMoveHandler = null;
+        let mouseUpHandler = null;
+
+        // 在拖动开始时动态添加事件监听器
+        function startDrag() {
+            mouseMoveHandler = function(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    
+                    const newX = e.clientX - initialX;
+                    const newY = e.clientY - initialY;
+
+                    const windowWidth = window.innerWidth;
+                    const windowHeight = window.innerHeight;
+                    const indicatorSize = 60;
+
+                    const constrainedX = Math.max(0, Math.min(newX, windowWidth - indicatorSize));
+                    const constrainedY = Math.max(0, Math.min(newY, windowHeight - indicatorSize));
+
+                    indicator.style.left = constrainedX + 'px';
+                    indicator.style.top = constrainedY + 'px';
+                    indicator.style.right = 'auto';
+                    
+                    console.log('拖动到位置:', constrainedX, constrainedY);
+                }
+            };
+
+            mouseUpHandler = function(e) {
+                console.log('测试拖动结束，isDragging:', isDragging);
                 
-                const newX = e.clientX - initialX;
-                const newY = e.clientY - initialY;
+                if (isDragging) {
+                    isDragging = false;
+                    
+                    indicator.style.transition = 'all 0.3s ease';
+                    indicator.style.opacity = '1';
+                    indicator.style.transform = 'scale(1)';
+                    indicator.style.cursor = 'pointer';
+                    
+                    console.log('结束拖动测试指示器');
+                    
+                    // 清理事件监听器
+                    if (mouseMoveHandler) {
+                        document.removeEventListener('mousemove', mouseMoveHandler);
+                        mouseMoveHandler = null;
+                    }
+                    if (mouseUpHandler) {
+                        document.removeEventListener('mouseup', mouseUpHandler);
+                        mouseUpHandler = null;
+                    }
+                    
+                    console.log('测试拖动事件监听器已清理');
+                }
+            };
+            
+            // 添加事件监听器
+            document.addEventListener('mousemove', mouseMoveHandler);
+            document.addEventListener('mouseup', mouseUpHandler);
+        }
 
-                const windowWidth = window.innerWidth;
-                const windowHeight = window.innerHeight;
-                const indicatorSize = 60;
-
-                const constrainedX = Math.max(0, Math.min(newX, windowWidth - indicatorSize));
-                const constrainedY = Math.max(0, Math.min(newY, windowHeight - indicatorSize));
-
-                indicator.style.left = constrainedX + 'px';
-                indicator.style.top = constrainedY + 'px';
-                indicator.style.right = 'auto';
-                
-                console.log('拖动到位置:', constrainedX, constrainedY);
-            }
-        });
-
-        // 鼠标释放
+        // 全局鼠标释放事件（处理拖动延时期间的释放）
         document.addEventListener('mouseup', function(e) {
             if (dragTimeout) {
                 clearTimeout(dragTimeout);
                 dragTimeout = null;
-                return;
-            }
-
-            if (isDragging) {
-                isDragging = false;
-                
-                indicator.style.transition = 'all 0.3s ease';
-                indicator.style.opacity = '1';
-                indicator.style.transform = 'scale(1)';
-                indicator.style.cursor = 'pointer';
-                
-                console.log('结束拖动测试指示器');
+                console.log('清除测试拖动延时 - 这是点击操作');
             }
         });
 
