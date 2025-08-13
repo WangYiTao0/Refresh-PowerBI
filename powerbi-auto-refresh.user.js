@@ -1105,13 +1105,14 @@
         manualRefresh();
         // 重置计时器
         GM_setValue('autoRefreshStartTime', Date.now());
-        countdownSeconds = interval / 1000;
       } else {
-        // 更新倒计时
+        // 计算剩余时间
         const remainingTime = interval - (elapsed % interval);
-        countdownSeconds = Math.ceil(remainingTime / 1000);
         console.log(`⏰ 距离下次刷新还有 ${Math.ceil(remainingTime / 60000)} 分钟`);
       }
+      
+      // 更新倒计时显示
+      updateCountdown();
     }
   }
 
@@ -1120,7 +1121,7 @@
   function updateCountdown() {
     const now = Date.now();
     
-    // 只有距离上次更新超过1秒才真正更新倒计时
+    // 只有距离上次更新超过1秒才检查状态
     if (now - lastCountdownUpdate >= 1000) {
       lastCountdownUpdate = now;
       
@@ -1128,21 +1129,41 @@
       if (Math.random() < 0.1) { // 10%的概率检查，避免过于频繁
         checkAutoRefreshStatus();
       }
-
-      if (countdownSeconds > 0) {
-        countdownSeconds--;
-      }
     }
 
-    // 但界面更新可以更频繁，确保显示流畅
+    // 计算真实的倒计时时间
     const countdownElement = document.getElementById("countdown-text");
     if (countdownElement) {
-      const minutes = Math.floor(countdownSeconds / 60);
-      const seconds = countdownSeconds % 60;
-      countdownElement.textContent = `${minutes
-        .toString()
-        .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+      const realCountdownSeconds = calculateRealCountdown();
+      
+      if (realCountdownSeconds > 0) {
+        const minutes = Math.floor(realCountdownSeconds / 60);
+        const seconds = realCountdownSeconds % 60;
+        countdownElement.textContent = `${minutes
+          .toString()
+          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+      } else if (GM_getValue("autoRefreshEnabled", false)) {
+        countdownElement.textContent = "即将刷新...";
+      } else {
+        countdownElement.textContent = "--:--";
+      }
     }
+  }
+
+  // 计算真实的倒计时秒数
+  function calculateRealCountdown() {
+    const startTime = GM_getValue('autoRefreshStartTime', null);
+    const interval = GM_getValue('autoRefreshInterval', null);
+    
+    if (!startTime || !interval || !GM_getValue("autoRefreshEnabled", false)) {
+      return 0;
+    }
+    
+    const now = Date.now();
+    const elapsed = now - startTime;
+    const remaining = interval - (elapsed % interval);
+    
+    return Math.ceil(remaining / 1000);
   }
 
   // 启动自动刷新
@@ -1151,7 +1172,6 @@
 
     const intervalMinutes = getCurrentRefreshInterval();
     const interval = intervalMinutes * 60 * 1000; // 转换为毫秒
-    countdownSeconds = intervalMinutes * 60; // 转换为秒
 
     // 记录启动时间
     const startTime = Date.now();
@@ -1161,8 +1181,7 @@
     refreshTimer = setInterval(() => {
       if (!isRefreshing) {
         manualRefresh();
-        countdownSeconds = intervalMinutes * 60; // 重置倒计时
-        // 更新启动时间
+        // 更新启动时间为下一个周期
         GM_setValue('autoRefreshStartTime', Date.now());
       }
     }, interval);
@@ -1176,6 +1195,9 @@
     const pageTypeText = currentPageType === "semantic-model" ? "Semantic Model" : 
                         currentPageType === "report" ? "Report" : "当前页面";
     console.log(`${pageTypeText}自动刷新已启动，间隔: ${intervalMinutes}分钟`);
+    
+    // 立即更新一次倒计时显示
+    updateCountdown();
   }
 
   // 创建后台工作保持机制
@@ -1502,6 +1524,12 @@
       // 启动后台保活机制
       createBackgroundKeepAlive();
       console.log("✅ 后台保活机制已启动");
+
+      // 启动倒计时显示器（无论是否启用自动刷新）
+      if (!countdownTimer) {
+        countdownTimer = setInterval(updateCountdown, 500);
+        console.log("✅ 倒计时显示器已启动");
+      }
 
       // 如果启用了自动刷新，启动定时器
       if (GM_getValue("autoRefreshEnabled", false)) {
