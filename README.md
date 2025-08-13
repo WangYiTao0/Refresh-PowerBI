@@ -38,6 +38,13 @@
 <button _ngcontent-ng-c1231654981="" id="reportAppBarRefreshBtn" class="actionBarBtn app-bar-nav-btn ng-star-inserted" aria-label="Refresh visuals—when the data model has been updated, refreshing will update all visuals with the latest data." pbi-focus-tracker-idx="14"><mat-icon _ngcontent-ng-c1231654981="" role="img" fonticon="pbi-glyph-refresh" class="mat-icon notranslate pbi-glyph-refresh pbi-glyph-font-face mat-icon-no-color" aria-hidden="true" data-mat-icon-type="font" data-mat-icon-name="pbi-glyph-refresh"></mat-icon></button>
 ```
 
+3. 如果没有找到 refresh visuals 按钮，尝试找到以下按钮，点击，再找 refresh visuals 按钮
+
+```css
+<button _ngcontent-ng-c1231654981="" localizetooltip="Options_Menu" data-testid="appbar-right-more-options" class="mat-mdc-menu-trigger app-bar-nav-btn ng-star-inserted" title="More options" aria-haspopup="menu" aria-expanded="false" pbi-focus-tracker-idx="5"><pbi-office-icon _ngcontent-ng-c1231654981="" aria-hidden="true" role="presentation" name="MorePBI_16" class="pbi-office-icon overFlowIcon ng-star-inserted" _nghost-ng-c2454461394="">
+</button>
+```
+
 3. 找到 menu 按钮->点击-> 等 1s 展开 menu
 
 ```css
