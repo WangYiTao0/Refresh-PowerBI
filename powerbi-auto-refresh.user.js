@@ -212,9 +212,13 @@
 
     // 创建设置面板
     function createSettingsPanel() {
+        console.log('createSettingsPanel 函数被调用');
+        
         // 检查是否已存在设置面板
-        if (document.getElementById('powerbi-settings-panel')) {
-            return;
+        const existingPanel = document.getElementById('powerbi-settings-panel');
+        if (existingPanel) {
+            console.log('设置面板已存在，移除现有面板');
+            existingPanel.remove();
         }
 
         const panel = document.createElement('div');
@@ -317,27 +321,41 @@
         `;
 
         document.body.appendChild(panel);
+        console.log('设置面板已创建并添加到页面');
 
         // 绑定事件
-        document.getElementById('close-settings').onclick = () => {
+        document.getElementById('close-settings').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('关闭设置面板');
             panel.remove();
-        };
+        });
 
-        document.getElementById('manual-refresh').onclick = () => {
+        document.getElementById('manual-refresh').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('手动刷新按钮被点击');
             manualRefresh();
-        };
+        });
 
-        document.getElementById('save-settings').onclick = () => {
+        document.getElementById('save-settings').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('保存设置按钮被点击');
             saveSettings();
             panel.remove();
-        };
-
-        // 点击面板外部关闭
-        document.addEventListener('click', function(e) {
-            if (!panel.contains(e.target) && e.target.id !== 'powerbi-refresh-indicator') {
-                panel.remove();
-            }
         });
+
+        // 点击面板外部关闭 - 使用setTimeout避免立即触发
+        setTimeout(() => {
+            document.addEventListener('click', function handleOutsideClick(e) {
+                if (!panel.contains(e.target) && e.target.id !== 'powerbi-refresh-indicator') {
+                    console.log('点击外部区域，关闭设置面板');
+                    panel.remove();
+                    document.removeEventListener('click', handleOutsideClick);
+                }
+            });
+        }, 100);
     }
 
     // 保存设置
@@ -430,31 +448,49 @@
 
         const indicator = document.createElement('div');
         indicator.id = 'powerbi-refresh-indicator';
-        indicator.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                width: 50px;
-                height: 50px;
-                background: #3498db;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                cursor: pointer;
-                z-index: 9999;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-                transition: all 0.3s ease;
-                color: white;
-                font-size: 20px;
-            " title="点击打开 Power BI 自动刷新设置">
-                🔄
-            </div>
+        indicator.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 9999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            color: white;
+            font-size: 20px;
+            user-select: none;
         `;
+        indicator.title = '点击打开 Power BI 自动刷新设置';
+        indicator.textContent = '🔄';
 
-        indicator.onclick = createSettingsPanel;
+        // 绑定点击事件
+        indicator.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('状态指示器被点击');
+            createSettingsPanel();
+        });
+
+        // 添加悬停效果
+        indicator.addEventListener('mouseenter', function() {
+            this.style.background = '#2980b9';
+            this.style.transform = 'scale(1.1)';
+        });
+
+        indicator.addEventListener('mouseleave', function() {
+            this.style.background = '#3498db';
+            this.style.transform = 'scale(1)';
+        });
+
         document.body.appendChild(indicator);
+        console.log('状态指示器已创建并添加到页面');
     }
 
     // 初始化脚本
