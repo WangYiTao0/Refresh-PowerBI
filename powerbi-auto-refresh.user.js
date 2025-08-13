@@ -871,10 +871,6 @@
             dragTimeout = setTimeout(() => {
                 isDragging = true;
                 
-                // 阻止点击事件
-                e.preventDefault();
-                e.stopPropagation();
-                
                 // 添加拖动样式
                 indicator.style.opacity = '0.8';
                 indicator.style.transform = 'scale(1.1)';
