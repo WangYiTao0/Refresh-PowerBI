@@ -474,8 +474,11 @@
     function calculatePanelPosition() {
         const indicator = document.getElementById('powerbi-refresh-indicator');
         if (!indicator) {
-            return { top: '60px', left: 'auto', right: '20px' };
+            console.log('⚠️ 指示器未找到，使用默认位置');
+            return { top: '60px', left: 'calc(100vw - 320px)', right: 'auto' };
         }
+        
+        console.log('📍 找到指示器，计算智能位置');
 
         const indicatorRect = indicator.getBoundingClientRect();
         const windowWidth = window.innerWidth;
@@ -530,37 +533,43 @@
 
     // 创建设置面板
     function createSettingsPanel() {
-        console.log('createSettingsPanel 函数被调用');
+        console.log('🎯 createSettingsPanel 函数开始执行');
         
-        // 检查是否已存在设置面板
-        const existingPanel = document.getElementById('powerbi-settings-panel');
-        if (existingPanel) {
-            console.log('设置面板已存在，移除现有面板');
-            existingPanel.remove();
-        }
+        try {
+            // 检查是否已存在设置面板
+            const existingPanel = document.getElementById('powerbi-settings-panel');
+            if (existingPanel) {
+                console.log('⚠️ 设置面板已存在，移除现有面板');
+                existingPanel.remove();
+            }
+            
+            console.log('📍 开始创建新的设置面板...');
 
-        // 计算面板位置
-        const panelPosition = calculatePanelPosition();
-        
-        const panel = document.createElement('div');
-        panel.id = 'powerbi-settings-panel';
-        
-        // 直接设置样式而不是通过innerHTML
-        panel.style.cssText = `
-            position: fixed;
-            top: ${panelPosition.top};
-            left: ${panelPosition.left};
-            width: 300px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-            z-index: 10000;
-            font-family: Arial, sans-serif;
-            font-size: 14px;
-        `;
-        
-        panel.innerHTML = `
+            // 计算面板位置
+            const panelPosition = calculatePanelPosition();
+            console.log('📍 面板位置计算完成:', panelPosition);
+            
+            const panel = document.createElement('div');
+            panel.id = 'powerbi-settings-panel';
+            console.log('📍 面板DOM元素已创建');
+            
+            // 直接设置样式而不是通过innerHTML
+            panel.style.cssText = `
+                position: fixed;
+                top: ${panelPosition.top};
+                left: ${panelPosition.left};
+                width: 300px;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                z-index: 10000;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+            `;
+            console.log('📍 面板样式已设置');
+            
+            panel.innerHTML = `
                 <div style="
                     background: #f8f9fa;
                     padding: 15px;
@@ -667,45 +676,86 @@
                 </div>
         `;
 
-        document.body.appendChild(panel);
-        console.log('设置面板已创建并添加到页面');
+            document.body.appendChild(panel);
+            console.log('✅ 设置面板已添加到DOM');
+            
+            // 验证面板是否真的在DOM中
+            const verifyPanel = document.getElementById('powerbi-settings-panel');
+            if (verifyPanel) {
+                console.log('✅ 面板DOM验证成功');
+            } else {
+                console.error('❌ 面板DOM验证失败');
+            }
 
-        // 绑定事件
-        document.getElementById('close-settings').addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('关闭设置面板');
-            panel.remove();
-        });
-
-        document.getElementById('manual-refresh').addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('手动刷新按钮被点击');
-            manualRefresh();
-        });
-
-        document.getElementById('save-settings').addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('保存设置按钮被点击');
-            saveSettings();
-            panel.remove();
-        });
-
-        // 添加拖动功能
-        makePanelDraggable(panel);
-
-        // 点击面板外部关闭 - 使用setTimeout避免立即触发
-        setTimeout(() => {
-            document.addEventListener('click', function handleOutsideClick(e) {
-                if (!panel.contains(e.target) && e.target.id !== 'powerbi-refresh-indicator') {
-                    console.log('点击外部区域，关闭设置面板');
-                    panel.remove();
-                    document.removeEventListener('click', handleOutsideClick);
+            // 绑定事件
+            try {
+                console.log('📍 开始绑定事件...');
+                
+                const closeBtn = document.getElementById('close-settings');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('✅ 关闭设置面板');
+                        panel.remove();
+                    });
+                    console.log('✅ 关闭按钮事件已绑定');
+                } else {
+                    console.error('❌ 关闭按钮未找到');
                 }
-            });
-        }, 100);
+
+                const refreshBtn = document.getElementById('manual-refresh');
+                if (refreshBtn) {
+                    refreshBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('✅ 手动刷新按钮被点击');
+                        manualRefresh();
+                    });
+                    console.log('✅ 刷新按钮事件已绑定');
+                } else {
+                    console.error('❌ 刷新按钮未找到');
+                }
+
+                const saveBtn = document.getElementById('save-settings');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('✅ 保存设置按钮被点击');
+                        saveSettings();
+                        panel.remove();
+                    });
+                    console.log('✅ 保存按钮事件已绑定');
+                } else {
+                    console.error('❌ 保存按钮未找到');
+                }
+                
+            } catch (eventError) {
+                console.error('❌ 事件绑定失败:', eventError);
+            }
+
+            // 添加拖动功能 - 临时禁用
+            // makePanelDraggable(panel);
+            console.log('⚠️ 面板拖动功能已临时禁用用于调试');
+
+            // 点击面板外部关闭 - 使用setTimeout避免立即触发
+            setTimeout(() => {
+                document.addEventListener('click', function handleOutsideClick(e) {
+                    if (!panel.contains(e.target) && e.target.id !== 'powerbi-refresh-indicator') {
+                        console.log('✅ 点击外部区域，关闭设置面板');
+                        panel.remove();
+                        document.removeEventListener('click', handleOutsideClick);
+                    }
+                });
+            }, 100);
+            
+            console.log('✅ 设置面板创建完成');
+            
+        } catch (error) {
+            console.error('❌ createSettingsPanel 执行失败:', error);
+            showNotification('设置面板创建失败: ' + error.message, 'error');
+        }
     }
 
     // 保存设置
@@ -975,8 +1025,15 @@
         indicator.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            console.log('状态指示器被点击');
-            createSettingsPanel();
+            console.log('✅ 状态指示器被点击');
+            
+            try {
+                createSettingsPanel();
+                console.log('✅ createSettingsPanel 调用成功');
+            } catch (error) {
+                console.error('❌ createSettingsPanel 调用失败:', error);
+                showNotification('设置面板创建失败: ' + error.message, 'error');
+            }
         });
 
         // 添加悬停效果
@@ -996,8 +1053,9 @@
         // 保存指示器元素引用
         indicatorElement = indicator;
         
-        // 为状态指示器添加拖动功能
-        makeIndicatorDraggable(indicator);
+        // 为状态指示器添加拖动功能 - 临时禁用以测试
+        // makeIndicatorDraggable(indicator);
+        console.log('⚠️ 拖动功能已临时禁用用于调试');
         
         // 初始化时检查全屏状态
         checkFullscreenStatus();
