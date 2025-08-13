@@ -226,11 +226,14 @@
             // 防止选中文字
             e.preventDefault();
             
-            // 记录初始位置
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
+            // 获取当前面板位置
+            const rect = panel.getBoundingClientRect();
+            
+            // 计算鼠标相对于面板的偏移
+            initialX = e.clientX - rect.left;
+            initialY = e.clientY - rect.top;
 
-            if (e.target === header) {
+            if (e.target === header || header.contains(e.target)) {
                 isDragging = true;
                 
                 // 添加拖动样式
@@ -249,11 +252,9 @@
             if (isDragging) {
                 e.preventDefault();
                 
+                // 计算新位置（鼠标位置减去点击时的相对偏移）
                 currentX = e.clientX - initialX;
                 currentY = e.clientY - initialY;
-
-                xOffset = currentX;
-                yOffset = currentY;
 
                 // 获取窗口尺寸
                 const windowWidth = window.innerWidth;
@@ -271,6 +272,10 @@
                 panel.style.left = constrainedX + 'px';
                 panel.style.top = constrainedY + 'px';
                 panel.style.right = 'auto'; // 取消right定位
+                
+                // 更新偏移量
+                xOffset = constrainedX;
+                yOffset = constrainedY;
             }
         });
 
@@ -314,12 +319,12 @@
             console.log('面板位置已重置');
         });
 
-        // 恢复保存的位置
+        // 恢复保存的用户自定义位置（如果存在）
         const savedX = GM_getValue('panelX', null);
         const savedY = GM_getValue('panelY', null);
         
         if (savedX !== null && savedY !== null) {
-            // 确保位置在可见区域内
+            // 用户曾经拖动过面板，使用保存的位置
             const windowWidth = window.innerWidth;
             const windowHeight = window.innerHeight;
             const panelWidth = 300; // 面板宽度
@@ -334,7 +339,73 @@
             
             xOffset = constrainedX;
             yOffset = constrainedY;
+            
+            console.log('恢复用户自定义面板位置:', constrainedX, constrainedY);
+        } else {
+            // 没有保存的位置，面板已经通过 calculatePanelPosition() 设置了智能位置
+            const rect = panel.getBoundingClientRect();
+            xOffset = rect.left;
+            yOffset = rect.top;
+            console.log('使用智能计算的面板位置:', rect.left, rect.top);
         }
+    }
+
+    // 计算设置面板的最佳显示位置
+    function calculatePanelPosition() {
+        const indicator = document.getElementById('powerbi-refresh-indicator');
+        if (!indicator) {
+            return { top: '60px', left: 'auto', right: '20px' };
+        }
+
+        const indicatorRect = indicator.getBoundingClientRect();
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const panelWidth = 300;
+        const panelHeight = 400; // 预估面板高度
+        const spacing = 10; // 间距
+
+        let position = {};
+
+        // 优先在指示器右侧显示
+        if (indicatorRect.right + spacing + panelWidth <= windowWidth) {
+            position.left = (indicatorRect.right + spacing) + 'px';
+            position.top = indicatorRect.top + 'px';
+            position.right = 'auto';
+        }
+        // 如果右侧空间不够，尝试左侧
+        else if (indicatorRect.left - spacing - panelWidth >= 0) {
+            position.left = (indicatorRect.left - spacing - panelWidth) + 'px';
+            position.top = indicatorRect.top + 'px';
+            position.right = 'auto';
+        }
+        // 如果左右都不够，显示在指示器下方
+        else if (indicatorRect.bottom + spacing + panelHeight <= windowHeight) {
+            position.left = Math.max(0, Math.min(indicatorRect.left, windowWidth - panelWidth)) + 'px';
+            position.top = (indicatorRect.bottom + spacing) + 'px';
+            position.right = 'auto';
+        }
+        // 如果下方也不够，显示在指示器上方
+        else if (indicatorRect.top - spacing - panelHeight >= 0) {
+            position.left = Math.max(0, Math.min(indicatorRect.left, windowWidth - panelWidth)) + 'px';
+            position.top = (indicatorRect.top - spacing - panelHeight) + 'px';
+            position.right = 'auto';
+        }
+        // 最后兜底：显示在屏幕中央
+        else {
+            position.left = Math.max(20, (windowWidth - panelWidth) / 2) + 'px';
+            position.top = Math.max(20, (windowHeight - panelHeight) / 2) + 'px';
+            position.right = 'auto';
+        }
+
+        // 确保面板完全在可视区域内
+        const leftValue = parseInt(position.left);
+        const topValue = parseInt(position.top);
+        
+        position.left = Math.max(0, Math.min(leftValue, windowWidth - panelWidth)) + 'px';
+        position.top = Math.max(0, Math.min(topValue, windowHeight - panelHeight)) + 'px';
+
+        console.log('计算的面板位置:', position);
+        return position;
     }
 
     // 创建设置面板
@@ -348,22 +419,28 @@
             existingPanel.remove();
         }
 
+        // 计算面板位置
+        const panelPosition = calculatePanelPosition();
+        
         const panel = document.createElement('div');
         panel.id = 'powerbi-settings-panel';
+        
+        // 直接设置样式而不是通过innerHTML
+        panel.style.cssText = `
+            position: fixed;
+            top: ${panelPosition.top};
+            left: ${panelPosition.left};
+            width: 300px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 10000;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+        `;
+        
         panel.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 60px;
-                right: 20px;
-                width: 300px;
-                background: white;
-                border: 1px solid #ddd;
-                border-radius: 8px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                z-index: 10000;
-                font-family: Arial, sans-serif;
-                font-size: 14px;
-            ">
                 <div style="
                     background: #f8f9fa;
                     padding: 15px;
@@ -456,7 +533,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
         `;
 
         document.body.appendChild(panel);
@@ -600,8 +676,12 @@
                 dragTimeout = null;
             }
 
-            initialX = e.clientX - xOffset;
-            initialY = e.clientY - yOffset;
+            // 获取当前指示器的位置
+            const rect = indicator.getBoundingClientRect();
+            
+            // 计算鼠标相对于指示器的偏移
+            initialX = e.clientX - rect.left;
+            initialY = e.clientY - rect.top;
 
             // 延迟开始拖动，避免与点击事件冲突
             dragTimeout = setTimeout(() => {
@@ -616,6 +696,7 @@
                 indicator.style.transform = 'scale(1.1)';
                 indicator.style.cursor = 'grabbing';
                 indicator.style.zIndex = '99999';
+                indicator.style.transition = 'none'; // 拖动时禁用过渡动画
                 
                 console.log('开始拖动状态指示器');
             }, 150); // 150ms延迟，短于点击但足够区分拖动意图
@@ -626,18 +707,16 @@
             if (isDragging) {
                 e.preventDefault();
                 
+                // 计算新位置（鼠标位置减去点击时的相对偏移）
                 currentX = e.clientX - initialX;
                 currentY = e.clientY - initialY;
-
-                xOffset = currentX;
-                yOffset = currentY;
 
                 // 获取窗口尺寸和指示器尺寸
                 const windowWidth = window.innerWidth;
                 const windowHeight = window.innerHeight;
                 const indicatorSize = 50; // 指示器尺寸
 
-                // 限制拖动范围
+                // 限制拖动范围，防止拖出屏幕
                 const constrainedX = Math.max(0, Math.min(currentX, windowWidth - indicatorSize));
                 const constrainedY = Math.max(0, Math.min(currentY, windowHeight - indicatorSize));
 
@@ -645,6 +724,10 @@
                 indicator.style.left = constrainedX + 'px';
                 indicator.style.top = constrainedY + 'px';
                 indicator.style.right = 'auto';
+                
+                // 更新偏移量
+                xOffset = constrainedX;
+                yOffset = constrainedY;
             }
         });
 
@@ -661,6 +744,7 @@
                 isDragging = false;
                 
                 // 恢复样式
+                indicator.style.transition = 'all 0.3s ease'; // 恢复过渡动画
                 indicator.style.opacity = '1';
                 indicator.style.transform = 'scale(1)';
                 indicator.style.cursor = 'pointer';
@@ -672,6 +756,8 @@
                 const rect = indicator.getBoundingClientRect();
                 GM_setValue('indicatorX', rect.left);
                 GM_setValue('indicatorY', rect.top);
+                
+                console.log('保存指示器位置:', rect.left, rect.top);
                 
                 // 防止触发点击事件
                 setTimeout(() => {
