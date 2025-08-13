@@ -37,6 +37,41 @@
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    // 显示通知消息
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.innerHTML = `
+            <div style="
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 10000;
+                padding: 12px 20px;
+                border-radius: 6px;
+                color: white;
+                font-family: Arial, sans-serif;
+                font-size: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                background-color: ${type === 'error' ? '#e74c3c' : type === 'success' ? '#27ae60' : '#3498db'};
+                animation: slideIn 0.3s ease-out;
+            ">
+                ${message}
+            </div>
+            <style>
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            </style>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+
     // 显示指示器
     function showIndicator() {
         if (indicatorElement && !isIndicatorVisible) {
@@ -172,41 +207,6 @@
             return 'report';
         }
         return 'unknown';
-    }
-
-    // 显示通知消息
-    function showNotification(message, type = 'info') {
-        const notification = document.createElement('div');
-        notification.innerHTML = `
-            <div style="
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 10000;
-                padding: 12px 20px;
-                border-radius: 6px;
-                color: white;
-                font-family: Arial, sans-serif;
-                font-size: 14px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                background-color: ${type === 'error' ? '#e74c3c' : type === 'success' ? '#27ae60' : '#3498db'};
-                animation: slideIn 0.3s ease-out;
-            ">
-                ${message}
-            </div>
-            <style>
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            </style>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
     }
 
     // Semantic Model 刷新功能
@@ -1005,24 +1005,37 @@
 
     // 初始化脚本
     function init() {
-        console.log('Power BI 自动刷新脚本已加载');
+        console.log('=== Power BI 自动刷新脚本开始初始化 ===');
         
-        // 检测页面类型
-        currentPageType = detectPageType();
-        console.log('当前页面类型:', currentPageType);
+        try {
+            // 检测页面类型
+            currentPageType = detectPageType();
+            console.log('✅ 页面类型检测完成:', currentPageType);
 
-        // 设置快捷键监听
-        setupKeyboardShortcuts();
-        
-        // 设置全屏状态监听
-        setupFullscreenListener();
+            // 设置快捷键监听
+            setupKeyboardShortcuts();
+            console.log('✅ 快捷键设置完成');
+            
+            // 设置全屏状态监听
+            setupFullscreenListener();
+            console.log('✅ 全屏监听设置完成');
 
-        // 创建状态指示器
-        createStatusIndicator();
+            // 创建状态指示器
+            createStatusIndicator();
+            console.log('✅ 状态指示器创建完成');
 
-        // 如果启用了自动刷新，启动定时器
-        if (GM_getValue('autoRefreshEnabled', false)) {
-            startAutoRefresh();
+            // 如果启用了自动刷新，启动定时器
+            if (GM_getValue('autoRefreshEnabled', false)) {
+                startAutoRefresh();
+                console.log('✅ 自动刷新已启动');
+            }
+            
+            console.log('=== 初始化完成 ===');
+            showNotification('Power BI 插件已加载', 'success');
+            
+        } catch (error) {
+            console.error('❌ 初始化失败:', error);
+            showNotification('插件加载失败: ' + error.message, 'error');
         }
 
         // 监听页面变化
