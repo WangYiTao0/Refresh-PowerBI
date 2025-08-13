@@ -244,7 +244,7 @@
     }
 
     // 检查是否处于全屏模式
-    function isFullscreen() {
+    function checkIsFullscreen() {
         return !!(document.fullscreenElement || 
                  document.webkitFullscreenElement || 
                  document.mozFullScreenElement || 
@@ -253,7 +253,7 @@
 
     // 退出全屏
     async function exitFullscreen() {
-        if (isFullscreen()) {
+        if (checkIsFullscreen()) {
             if (document.exitFullscreen) {
                 await document.exitFullscreen();
             } else if (document.webkitExitFullscreen) {
@@ -274,7 +274,7 @@
             showNotification('开始刷新 Report...', 'info');
 
             // 1. 如果处于全屏状态，先退出全屏
-            if (isFullscreen()) {
+            if (checkIsFullscreen()) {
                 await exitFullscreen();
                 showNotification('已退出全屏模式', 'info');
             }
