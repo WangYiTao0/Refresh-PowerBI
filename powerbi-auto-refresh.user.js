@@ -321,33 +321,60 @@
       }
 
       // 2. 找到并点击刷新视觉效果按钮
-      const refreshVisualsButton = await waitForElement(
-        "#reportAppBarRefreshBtn"
-      );
-      refreshVisualsButton.click();
-      console.log("点击了刷新视觉效果按钮");
+      let refreshVisualsButton;
+      try {
+        refreshVisualsButton = await waitForElement(
+          "#reportAppBarRefreshBtn", 3000
+        );
+        refreshVisualsButton.click();
+        console.log("点击了刷新视觉效果按钮");
+      } catch (error) {
+        console.log("⚠️ 未找到refresh visuals按钮，尝试点击More options按钮");
+        
+        // 3. 备用方案：点击More options按钮
+        try {
+          const moreOptionsButton = await waitForElement(
+            'button[data-testid="appbar-right-more-options"]'
+          );
+          moreOptionsButton.click();
+          console.log("点击了More options按钮");
+          
+          // 等待菜单展开
+          await sleep(CONFIG.MENU_EXPAND_WAIT);
+          
+          // 再次尝试找到refresh visuals按钮
+          refreshVisualsButton = await waitForElement(
+            "#reportAppBarRefreshBtn"
+          );
+          refreshVisualsButton.click();
+          console.log("在More options菜单中找到并点击了refresh visuals按钮");
+        } catch (moreOptionsError) {
+          console.error("More options备用方案也失败:", moreOptionsError);
+          throw new Error("无法找到refresh visuals按钮，尝试了More options备用方案");
+        }
+      }
 
-      // 3. 等待刷新完成
+      // 4. 等待刷新完成
       await sleep(CONFIG.REPORT_REFRESH_WAIT_TIME);
 
-      // 4. 找到并点击菜单按钮
+      // 5. 找到并点击菜单按钮
       const menuButton = await waitForElement(
         'button[data-testid="app-bar-view-menu-btn"]'
       );
       menuButton.click();
       console.log("点击了菜单按钮");
 
-      // 5. 等待菜单展开
+      // 6. 等待菜单展开
       await sleep(CONFIG.MENU_EXPAND_WAIT);
 
-      // 6. 找到并点击全屏按钮
+      // 7. 找到并点击全屏按钮
       const fullscreenButton = await waitForElement(
         'button[data-testid="open-in-full-screen-btn"]'
       );
       fullscreenButton.click();
       console.log("点击了全屏按钮");
 
-      // 7. 等待一段时间后检查是否真正进入了浏览器全屏
+      // 8. 等待一段时间后检查是否真正进入了浏览器全屏
       await sleep(1000); // 等待1秒让全屏效果生效
       simulateF11();
       const isBrowserFullscreen = !!(
