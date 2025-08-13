@@ -210,6 +210,133 @@
         }
     }
 
+    // 使面板可拖动
+    function makePanelDraggable(panel) {
+        const header = panel.querySelector('#panel-header');
+        let isDragging = false;
+        let currentX = 0;
+        let currentY = 0;
+        let initialX = 0;
+        let initialY = 0;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        // 鼠标按下事件
+        header.addEventListener('mousedown', function(e) {
+            // 防止选中文字
+            e.preventDefault();
+            
+            // 记录初始位置
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+
+            if (e.target === header) {
+                isDragging = true;
+                
+                // 添加拖动样式
+                panel.style.transition = 'none';
+                panel.style.cursor = 'grabbing';
+                header.style.cursor = 'grabbing';
+                panel.style.opacity = '0.9';
+                panel.style.transform = 'scale(1.02)';
+                
+                console.log('开始拖动面板');
+            }
+        });
+
+        // 鼠标移动事件
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                e.preventDefault();
+                
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                // 获取窗口尺寸
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+                const panelRect = panel.getBoundingClientRect();
+
+                // 限制拖动范围，防止拖出屏幕
+                const maxX = windowWidth - panelRect.width;
+                const maxY = windowHeight - panelRect.height;
+                
+                const constrainedX = Math.max(0, Math.min(currentX, maxX));
+                const constrainedY = Math.max(0, Math.min(currentY, maxY));
+
+                // 应用位置
+                panel.style.left = constrainedX + 'px';
+                panel.style.top = constrainedY + 'px';
+                panel.style.right = 'auto'; // 取消right定位
+            }
+        });
+
+        // 鼠标释放事件
+        document.addEventListener('mouseup', function(e) {
+            if (isDragging) {
+                isDragging = false;
+                
+                // 恢复样式
+                panel.style.transition = 'all 0.3s ease';
+                panel.style.cursor = 'default';
+                header.style.cursor = 'move';
+                panel.style.opacity = '1';
+                panel.style.transform = 'scale(1)';
+                
+                console.log('结束拖动面板');
+                
+                // 保存面板位置
+                const rect = panel.getBoundingClientRect();
+                GM_setValue('panelX', rect.left);
+                GM_setValue('panelY', rect.top);
+            }
+        });
+
+        // 双击标题栏重置位置
+        header.addEventListener('dblclick', function(e) {
+            e.preventDefault();
+            panel.style.transition = 'all 0.3s ease';
+            panel.style.left = 'auto';
+            panel.style.top = '60px';
+            panel.style.right = '20px';
+            
+            // 清除保存的位置
+            GM_setValue('panelX', null);
+            GM_setValue('panelY', null);
+            
+            xOffset = 0;
+            yOffset = 0;
+            
+            showNotification('面板位置已重置', 'info');
+            console.log('面板位置已重置');
+        });
+
+        // 恢复保存的位置
+        const savedX = GM_getValue('panelX', null);
+        const savedY = GM_getValue('panelY', null);
+        
+        if (savedX !== null && savedY !== null) {
+            // 确保位置在可见区域内
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const panelWidth = 300; // 面板宽度
+            const panelHeight = 400; // 预估面板高度
+            
+            const constrainedX = Math.max(0, Math.min(savedX, windowWidth - panelWidth));
+            const constrainedY = Math.max(0, Math.min(savedY, windowHeight - panelHeight));
+            
+            panel.style.left = constrainedX + 'px';
+            panel.style.top = constrainedY + 'px';
+            panel.style.right = 'auto';
+            
+            xOffset = constrainedX;
+            yOffset = constrainedY;
+        }
+    }
+
     // 创建设置面板
     function createSettingsPanel() {
         console.log('createSettingsPanel 函数被调用');
@@ -246,13 +373,25 @@
                     justify-content: space-between;
                     align-items: center;
                 ">
-                    <h3 style="margin: 0; color: #333;">Power BI 自动刷新设置</h3>
+                    <h3 id="panel-header" style="
+                        margin: 0; 
+                        color: #333;
+                        cursor: move;
+                        user-select: none;
+                        flex: 1;
+                        padding: 5px;
+                    ">Power BI 自动刷新设置 📌</h3>
                     <button id="close-settings" style="
                         background: none;
                         border: none;
                         font-size: 18px;
                         cursor: pointer;
                         color: #666;
+                        width: 30px;
+                        height: 30px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
                     ">×</button>
                 </div>
                 <div style="padding: 20px;">
@@ -345,6 +484,9 @@
             saveSettings();
             panel.remove();
         });
+
+        // 添加拖动功能
+        makePanelDraggable(panel);
 
         // 点击面板外部关闭 - 使用setTimeout避免立即触发
         setTimeout(() => {
@@ -439,6 +581,127 @@
         console.log('自动刷新已停止');
     }
 
+    // 使状态指示器可拖动
+    function makeIndicatorDraggable(indicator) {
+        let isDragging = false;
+        let dragTimeout = null;
+        let initialX = 0;
+        let initialY = 0;
+        let currentX = 0;
+        let currentY = 0;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        // 鼠标按下事件
+        indicator.addEventListener('mousedown', function(e) {
+            // 清除可能存在的点击延时
+            if (dragTimeout) {
+                clearTimeout(dragTimeout);
+                dragTimeout = null;
+            }
+
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+
+            // 延迟开始拖动，避免与点击事件冲突
+            dragTimeout = setTimeout(() => {
+                isDragging = true;
+                
+                // 阻止点击事件
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // 添加拖动样式
+                indicator.style.opacity = '0.8';
+                indicator.style.transform = 'scale(1.1)';
+                indicator.style.cursor = 'grabbing';
+                indicator.style.zIndex = '99999';
+                
+                console.log('开始拖动状态指示器');
+            }, 150); // 150ms延迟，短于点击但足够区分拖动意图
+        });
+
+        // 鼠标移动事件
+        document.addEventListener('mousemove', function(e) {
+            if (isDragging) {
+                e.preventDefault();
+                
+                currentX = e.clientX - initialX;
+                currentY = e.clientY - initialY;
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                // 获取窗口尺寸和指示器尺寸
+                const windowWidth = window.innerWidth;
+                const windowHeight = window.innerHeight;
+                const indicatorSize = 50; // 指示器尺寸
+
+                // 限制拖动范围
+                const constrainedX = Math.max(0, Math.min(currentX, windowWidth - indicatorSize));
+                const constrainedY = Math.max(0, Math.min(currentY, windowHeight - indicatorSize));
+
+                // 应用位置
+                indicator.style.left = constrainedX + 'px';
+                indicator.style.top = constrainedY + 'px';
+                indicator.style.right = 'auto';
+            }
+        });
+
+        // 鼠标释放事件
+        document.addEventListener('mouseup', function(e) {
+            // 清除拖动延时
+            if (dragTimeout) {
+                clearTimeout(dragTimeout);
+                dragTimeout = null;
+                return; // 如果还在延时期间，说明是点击而不是拖动
+            }
+
+            if (isDragging) {
+                isDragging = false;
+                
+                // 恢复样式
+                indicator.style.opacity = '1';
+                indicator.style.transform = 'scale(1)';
+                indicator.style.cursor = 'pointer';
+                indicator.style.zIndex = '9999';
+                
+                console.log('结束拖动状态指示器');
+                
+                // 保存指示器位置
+                const rect = indicator.getBoundingClientRect();
+                GM_setValue('indicatorX', rect.left);
+                GM_setValue('indicatorY', rect.top);
+                
+                // 防止触发点击事件
+                setTimeout(() => {
+                    indicator.style.pointerEvents = 'auto';
+                }, 50);
+            }
+        });
+
+        // 恢复保存的位置
+        const savedX = GM_getValue('indicatorX', null);
+        const savedY = GM_getValue('indicatorY', null);
+        
+        if (savedX !== null && savedY !== null) {
+            // 确保位置在可见区域内
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const indicatorSize = 50;
+            
+            const constrainedX = Math.max(0, Math.min(savedX, windowWidth - indicatorSize));
+            const constrainedY = Math.max(0, Math.min(savedY, windowHeight - indicatorSize));
+            
+            indicator.style.left = constrainedX + 'px';
+            indicator.style.top = constrainedY + 'px';
+            indicator.style.right = 'auto';
+            
+            xOffset = constrainedX;
+            yOffset = constrainedY;
+        }
+    }
+
     // 创建状态指示器
     function createStatusIndicator() {
         // 检查是否已存在指示器
@@ -491,6 +754,9 @@
 
         document.body.appendChild(indicator);
         console.log('状态指示器已创建并添加到页面');
+        
+        // 为状态指示器添加拖动功能
+        makeIndicatorDraggable(indicator);
     }
 
     // 初始化脚本

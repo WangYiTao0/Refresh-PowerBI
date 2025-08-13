@@ -39,6 +39,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 3. **定时器模块** - 管理自动执行和倒计时
 4. **设置管理模块** - 用户配置的存储和UI
 5. **通知系统** - 用户反馈和状态提示
+6. **拖动系统** - 支持状态指示器和设置面板的拖拽移动
 
 ### 关键选择器
 ```css
@@ -76,3 +77,6 @@ button[data-testid="open-in-full-screen-btn"]
 3. 验证定时器和倒计时功能
 4. 测试设置面板的保存和加载
 5. 确认页面切换时的正确识别
+6. 测试状态指示器和设置面板的拖动功能
+7. 验证位置保存和恢复功能
+8. 测试双击重置位置功能
