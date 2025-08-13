@@ -37,6 +37,35 @@
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    // 模拟F11按键进入浏览器全屏
+    function simulateF11() {
+        console.log('🖥️ 模拟F11按键进入浏览器全屏');
+        
+        // 创建F11按键事件
+        const f11Event = new KeyboardEvent('keydown', {
+            key: 'F11',
+            code: 'F11',
+            keyCode: 122,
+            which: 122,
+            bubbles: true,
+            cancelable: true
+        });
+        
+        // 触发事件
+        document.dispatchEvent(f11Event);
+        
+        // 也尝试直接请求全屏
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen();
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        } else if (document.documentElement.mozRequestFullScreen) {
+            document.documentElement.mozRequestFullScreen();
+        } else if (document.documentElement.msRequestFullscreen) {
+            document.documentElement.msRequestFullscreen();
+        }
+    }
+
     // 显示通知消息
     function showNotification(message, type = 'info') {
         const notification = document.createElement('div');
@@ -299,6 +328,23 @@
             const fullscreenButton = await waitForElement('button[data-testid="open-in-full-screen-btn"]');
             fullscreenButton.click();
             console.log('点击了全屏按钮');
+
+            // 7. 等待一段时间后检查是否真正进入了浏览器全屏
+            await sleep(1000); // 等待1秒让全屏效果生效
+            
+            const isBrowserFullscreen = !!(document.fullscreenElement || 
+                                           document.webkitFullscreenElement || 
+                                           document.mozFullScreenElement || 
+                                           document.msFullscreenElement);
+            
+            if (!isBrowserFullscreen) {
+                console.log('⚠️ 检测到未进入浏览器全屏，自动触发F11');
+                showNotification('Power BI网页全屏已打开，正在进入浏览器全屏...', 'info');
+                simulateF11();
+                await sleep(500); // 等待F11生效
+            } else {
+                console.log('✅ 已成功进入浏览器全屏');
+            }
 
             showNotification('Report 刷新完成并已切换到全屏模式', 'success');
 
