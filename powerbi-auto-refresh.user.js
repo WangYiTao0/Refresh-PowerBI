@@ -66,6 +66,31 @@
     }
   }
 
+  // 获取当前页面类型的刷新间隔
+  function getCurrentRefreshInterval() {
+    if (currentPageType === "semantic-model") {
+      return GM_getValue("semanticModelInterval", 60);
+    } else if (currentPageType === "report") {
+      return GM_getValue("reportInterval", 30);
+    } else {
+      return GM_getValue("refreshInterval", 60); // 兼容旧设置
+    }
+  }
+
+  // 设置当前页面类型的刷新间隔
+  function setCurrentRefreshInterval(interval) {
+    if (currentPageType === "semantic-model") {
+      GM_setValue("semanticModelInterval", interval);
+      console.log(`✅ Semantic Model间隔已设置为: ${interval}分钟`);
+    } else if (currentPageType === "report") {
+      GM_setValue("reportInterval", interval);
+      console.log(`✅ Report间隔已设置为: ${interval}分钟`);
+    } else {
+      GM_setValue("refreshInterval", interval); // 兼容旧设置
+      console.log(`✅ 通用间隔已设置为: ${interval}分钟`);
+    }
+  }
+
   // 显示通知消息
   function showNotification(message, type = "info") {
     const notification = document.createElement("div");
@@ -741,54 +766,43 @@
                         </div>
                         
                         <div style="margin-bottom: 10px;">
-                            <label>刷新间隔:</label>
+                            <label>${
+                              currentPageType === "semantic-model"
+                                ? "Semantic Model 刷新间隔:"
+                                : currentPageType === "report"
+                                ? "Report 刷新间隔:"
+                                : "刷新间隔:"
+                            }</label>
                             <select id="refresh-interval" style="width: 100%; padding: 5px; margin-top: 5px;">
-                                <option value="1" ${
-                                  GM_getValue("refreshInterval", 60) == 1
-                                    ? "selected"
-                                    : ""
-                                }>1分钟 (测试)</option>
-                                <option value="2" ${
-                                  GM_getValue("refreshInterval", 60) == 2
-                                    ? "selected"
-                                    : ""
-                                }>2分钟 (测试)</option>
-                                <option value="5" ${
-                                  GM_getValue("refreshInterval", 60) == 5
-                                    ? "selected"
-                                    : ""
-                                }>5分钟</option>
-                                <option value="10" ${
-                                  GM_getValue("refreshInterval", 60) == 10
-                                    ? "selected"
-                                    : ""
-                                }>10分钟</option>
-                                <option value="15" ${
-                                  GM_getValue("refreshInterval", 60) == 15
-                                    ? "selected"
-                                    : ""
-                                }>15分钟</option>
-                                <option value="30" ${
-                                  GM_getValue("refreshInterval", 60) == 30
-                                    ? "selected"
-                                    : ""
-                                }>30分钟</option>
-                                <option value="60" ${
-                                  GM_getValue("refreshInterval", 60) == 60
-                                    ? "selected"
-                                    : ""
-                                }>1小时</option>
-                                <option value="120" ${
-                                  GM_getValue("refreshInterval", 60) == 120
-                                    ? "selected"
-                                    : ""
-                                }>2小时</option>
-                                <option value="180" ${
-                                  GM_getValue("refreshInterval", 60) == 180
-                                    ? "selected"
-                                    : ""
-                                }>3小时</option>
+                                ${(() => {
+                                  const currentInterval = getCurrentRefreshInterval();
+                                  return `
+                                    <option value="1" ${currentInterval == 1 ? "selected" : ""}>1分钟 (测试)</option>
+                                    <option value="2" ${currentInterval == 2 ? "selected" : ""}>2分钟 (测试)</option>
+                                    <option value="5" ${currentInterval == 5 ? "selected" : ""}>5分钟</option>
+                                    <option value="10" ${currentInterval == 10 ? "selected" : ""}>10分钟</option>
+                                    <option value="15" ${currentInterval == 15 ? "selected" : ""}>15分钟</option>
+                                    <option value="30" ${currentInterval == 30 ? "selected" : ""}>30分钟</option>
+                                    <option value="60" ${currentInterval == 60 ? "selected" : ""}>1小时</option>
+                                    <option value="120" ${currentInterval == 120 ? "selected" : ""}>2小时</option>
+                                    <option value="180" ${currentInterval == 180 ? "selected" : ""}>3小时</option>
+                                  `;
+                                })()}
                             </select>
+                            <div style="
+                                font-size: 12px;
+                                color: #666;
+                                margin-top: 5px;
+                                font-style: italic;
+                            ">
+                                ${
+                                  currentPageType === "semantic-model"
+                                    ? "数据模型刷新通常需要较长间隔"
+                                    : currentPageType === "report"
+                                    ? "报表刷新可以设置较短间隔"
+                                    : "根据页面类型自动选择合适的间隔"
+                                }
+                            </div>
                         </div>
                         
                         <div style="margin-bottom: 10px;">
@@ -807,6 +821,21 @@
                                 cursor: pointer;
                             ">应用自定义间隔</button>
                         </div>
+                        
+                        ${currentPageType !== "unknown" ? `
+                        <div style="
+                            background: #e8f4fd;
+                            padding: 8px;
+                            border-radius: 5px;
+                            font-size: 12px;
+                            color: #2c3e50;
+                            margin-bottom: 10px;
+                        ">
+                            <strong>📊 其他页面间隔:</strong><br>
+                            Semantic Model: ${GM_getValue("semanticModelInterval", 60)}分钟<br>
+                            Report: ${GM_getValue("reportInterval", 30)}分钟
+                        </div>
+                        ` : ""}
                     </div>
                     
                     <div style="margin-bottom: 20px;">
@@ -985,18 +1014,20 @@
       selectElement.appendChild(newOption);
     }
     
-    // 保存设置
-    GM_setValue("refreshInterval", customValue);
+    // 保存设置到对应页面类型
+    setCurrentRefreshInterval(customValue);
     
     // 重启自动刷新（如果已启用）
     if (GM_getValue("autoRefreshEnabled", false)) {
       startAutoRefresh();
     }
     
-    showNotification(`自定义间隔已设置为 ${customValue} 分钟`, "success");
+    const pageTypeText = currentPageType === "semantic-model" ? "Semantic Model" : 
+                        currentPageType === "report" ? "Report" : "当前页面";
+    showNotification(`${pageTypeText}自定义间隔已设置为 ${customValue} 分钟`, "success");
     customInput.value = "";
     
-    console.log(`✅ 自定义间隔设置为: ${customValue}分钟`);
+    console.log(`✅ ${pageTypeText}自定义间隔设置为: ${customValue}分钟`);
   }
 
   // 保存设置
@@ -1009,9 +1040,13 @@
     );
 
     GM_setValue("autoRefreshEnabled", autoRefreshEnabled);
-    GM_setValue("refreshInterval", refreshInterval);
+    
+    // 保存到对应页面类型的间隔设置
+    setCurrentRefreshInterval(refreshInterval);
 
-    showNotification("设置已保存", "success");
+    const pageTypeText = currentPageType === "semantic-model" ? "Semantic Model" : 
+                        currentPageType === "report" ? "Report" : "当前页面";
+    showNotification(`${pageTypeText}设置已保存`, "success");
 
     // 重启定时器
     if (autoRefreshEnabled) {
@@ -1114,18 +1149,19 @@
   function startAutoRefresh() {
     stopAutoRefresh(); // 先停止现有的定时器
 
-    const interval = GM_getValue("refreshInterval", 60) * 60 * 1000; // 转换为毫秒
-    countdownSeconds = GM_getValue("refreshInterval", 60) * 60; // 转换为秒
+    const intervalMinutes = getCurrentRefreshInterval();
+    const interval = intervalMinutes * 60 * 1000; // 转换为毫秒
+    countdownSeconds = intervalMinutes * 60; // 转换为秒
 
     // 记录启动时间
     const startTime = Date.now();
     GM_setValue('autoRefreshStartTime', startTime);
-    GM_setValue('autoRefreshInterval', GM_getValue("refreshInterval", 60) * 60 * 1000);
+    GM_setValue('autoRefreshInterval', interval);
 
     refreshTimer = setInterval(() => {
       if (!isRefreshing) {
         manualRefresh();
-        countdownSeconds = GM_getValue("refreshInterval", 60) * 60; // 重置倒计时
+        countdownSeconds = intervalMinutes * 60; // 重置倒计时
         // 更新启动时间
         GM_setValue('autoRefreshStartTime', Date.now());
       }
@@ -1137,9 +1173,9 @@
     // 添加页面可见性检查
     setupVisibilityHandler();
 
-    console.log(
-      `自动刷新已启动，间隔: ${GM_getValue("refreshInterval", 60)}分钟`
-    );
+    const pageTypeText = currentPageType === "semantic-model" ? "Semantic Model" : 
+                        currentPageType === "report" ? "Report" : "当前页面";
+    console.log(`${pageTypeText}自动刷新已启动，间隔: ${intervalMinutes}分钟`);
   }
 
   // 创建后台工作保持机制
