@@ -741,8 +741,33 @@
                         </div>
                         
                         <div style="margin-bottom: 10px;">
-                            <label>刷新间隔 (分钟):</label>
+                            <label>刷新间隔:</label>
                             <select id="refresh-interval" style="width: 100%; padding: 5px; margin-top: 5px;">
+                                <option value="1" ${
+                                  GM_getValue("refreshInterval", 60) == 1
+                                    ? "selected"
+                                    : ""
+                                }>1分钟 (测试)</option>
+                                <option value="2" ${
+                                  GM_getValue("refreshInterval", 60) == 2
+                                    ? "selected"
+                                    : ""
+                                }>2分钟 (测试)</option>
+                                <option value="5" ${
+                                  GM_getValue("refreshInterval", 60) == 5
+                                    ? "selected"
+                                    : ""
+                                }>5分钟</option>
+                                <option value="10" ${
+                                  GM_getValue("refreshInterval", 60) == 10
+                                    ? "selected"
+                                    : ""
+                                }>10分钟</option>
+                                <option value="15" ${
+                                  GM_getValue("refreshInterval", 60) == 15
+                                    ? "selected"
+                                    : ""
+                                }>15分钟</option>
                                 <option value="30" ${
                                   GM_getValue("refreshInterval", 60) == 30
                                     ? "selected"
@@ -764,6 +789,23 @@
                                     : ""
                                 }>3小时</option>
                             </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 10px;">
+                            <label>自定义间隔 (分钟):</label>
+                            <input type="number" id="custom-interval" min="1" max="1440" 
+                                   style="width: 100%; padding: 5px; margin-top: 5px;"
+                                   placeholder="输入自定义分钟数 (1-1440)">
+                            <button id="apply-custom" style="
+                                width: 100%; 
+                                padding: 5px; 
+                                margin-top: 5px;
+                                background: #f39c12;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;
+                            ">应用自定义间隔</button>
                         </div>
                     </div>
                     
@@ -869,6 +911,19 @@
         } else {
           console.error("❌ 保存按钮未找到");
         }
+
+        const customBtn = document.getElementById("apply-custom");
+        if (customBtn) {
+          customBtn.addEventListener("click", function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("✅ 应用自定义间隔按钮被点击");
+            applyCustomInterval();
+          });
+          console.log("✅ 自定义间隔按钮事件已绑定");
+        } else {
+          console.error("❌ 自定义间隔按钮未找到");
+        }
       } catch (eventError) {
         console.error("❌ 事件绑定失败:", eventError);
       }
@@ -896,6 +951,52 @@
       console.error("❌ createSettingsPanel 执行失败:", error);
       showNotification("设置面板创建失败: " + error.message, "error");
     }
+  }
+
+  // 应用自定义间隔
+  function applyCustomInterval() {
+    const customInput = document.getElementById("custom-interval");
+    const customValue = parseInt(customInput.value);
+    
+    if (!customValue || customValue < 1 || customValue > 1440) {
+      showNotification("请输入1-1440之间的有效分钟数", "error");
+      return;
+    }
+    
+    // 更新下拉菜单
+    const selectElement = document.getElementById("refresh-interval");
+    
+    // 检查是否已存在这个值的选项
+    let optionExists = false;
+    for (let option of selectElement.options) {
+      if (parseInt(option.value) === customValue) {
+        option.selected = true;
+        optionExists = true;
+        break;
+      }
+    }
+    
+    // 如果不存在，添加新选项
+    if (!optionExists) {
+      const newOption = document.createElement('option');
+      newOption.value = customValue;
+      newOption.textContent = `${customValue}分钟 (自定义)`;
+      newOption.selected = true;
+      selectElement.appendChild(newOption);
+    }
+    
+    // 保存设置
+    GM_setValue("refreshInterval", customValue);
+    
+    // 重启自动刷新（如果已启用）
+    if (GM_getValue("autoRefreshEnabled", false)) {
+      startAutoRefresh();
+    }
+    
+    showNotification(`自定义间隔已设置为 ${customValue} 分钟`, "success");
+    customInput.value = "";
+    
+    console.log(`✅ 自定义间隔设置为: ${customValue}分钟`);
   }
 
   // 保存设置
@@ -980,12 +1081,25 @@
   }
 
   // 更新倒计时显示
+  let lastCountdownUpdate = 0;
   function updateCountdown() {
-    // 检查自动刷新状态以防止后台暂停
-    if (Math.random() < 0.1) { // 10%的概率检查，避免过于频繁
-      checkAutoRefreshStatus();
+    const now = Date.now();
+    
+    // 只有距离上次更新超过1秒才真正更新倒计时
+    if (now - lastCountdownUpdate >= 1000) {
+      lastCountdownUpdate = now;
+      
+      // 检查自动刷新状态以防止后台暂停
+      if (Math.random() < 0.1) { // 10%的概率检查，避免过于频繁
+        checkAutoRefreshStatus();
+      }
+
+      if (countdownSeconds > 0) {
+        countdownSeconds--;
+      }
     }
 
+    // 但界面更新可以更频繁，确保显示流畅
     const countdownElement = document.getElementById("countdown-text");
     if (countdownElement) {
       const minutes = Math.floor(countdownSeconds / 60);
@@ -993,10 +1107,6 @@
       countdownElement.textContent = `${minutes
         .toString()
         .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-    }
-
-    if (countdownSeconds > 0) {
-      countdownSeconds--;
     }
   }
 
