@@ -854,6 +854,8 @@
 
         // 鼠标按下事件
         indicator.addEventListener('mousedown', function(e) {
+            console.log('🖱️ 鼠标按下事件触发');
+            
             // 清除可能存在的点击延时
             if (dragTimeout) {
                 clearTimeout(dragTimeout);
@@ -1048,6 +1050,7 @@
         indicatorElement = indicator;
         
         // 为状态指示器添加拖动功能
+        console.log('📍 准备添加拖动功能...');
         makeIndicatorDraggable(indicator);
         console.log('✅ 状态指示器拖动功能已启用');
         
