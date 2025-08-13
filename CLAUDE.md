@@ -15,6 +15,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 自动刷新Report报表并切换全屏
 - 支持定时执行（30分钟/1小时/2小时/3小时间隔）
 - 提供可视化设置面板和倒计时显示
+- 快捷键控制（Shift+Alt+H）显示/隐藏指示器
+- 智能全屏适配，自动隐藏/显示指示器
 
 ## Development Commands
 
@@ -40,6 +42,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 4. **设置管理模块** - 用户配置的存储和UI
 5. **通知系统** - 用户反馈和状态提示
 6. **拖动系统** - 支持状态指示器和设置面板的拖拽移动
+7. **快捷键系统** - Shift+Alt+H控制显示/隐藏
+8. **全屏适配系统** - 自动检测并适配全屏状态
 
 ### 关键选择器
 ```css
@@ -80,3 +84,7 @@ button[data-testid="open-in-full-screen-btn"]
 6. 测试状态指示器和设置面板的拖动功能
 7. 验证位置保存和恢复功能
 8. 测试双击重置位置功能
+9. 测试Shift+Alt+H快捷键切换显示/隐藏
+10. 验证全屏时自动隐藏，退出全屏时自动显示
+11. 测试Power BI内置全屏模式的检测
+12. 验证TamperMonkey菜单命令功能

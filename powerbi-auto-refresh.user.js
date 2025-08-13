@@ -28,10 +28,110 @@
     let currentPageType = '';
     let isRefreshing = false;
     let countdownSeconds = 0;
+    let isIndicatorVisible = true; // 指示器显示状态
+    let indicatorElement = null; // 指示器元素引用
+    let isFullscreen = false; // 全屏状态
 
     // 工具函数：等待指定时间
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // 显示指示器
+    function showIndicator() {
+        if (indicatorElement && !isIndicatorVisible) {
+            indicatorElement.style.display = 'flex';
+            isIndicatorVisible = true;
+            console.log('显示状态指示器');
+            showNotification('Power BI 指示器已显示', 'info');
+        }
+    }
+
+    // 隐藏指示器
+    function hideIndicator() {
+        if (indicatorElement && isIndicatorVisible) {
+            indicatorElement.style.display = 'none';
+            isIndicatorVisible = false;
+            console.log('隐藏状态指示器');
+            showNotification('Power BI 指示器已隐藏', 'info');
+        }
+    }
+
+    // 切换指示器显示状态
+    function toggleIndicator() {
+        if (isIndicatorVisible) {
+            hideIndicator();
+        } else {
+            showIndicator();
+        }
+    }
+
+    // 检查全屏状态
+    function checkFullscreenStatus() {
+        // 检查浏览器原生全屏
+        const browserFullscreen = !!(document.fullscreenElement || 
+                                    document.webkitFullscreenElement || 
+                                    document.mozFullScreenElement || 
+                                    document.msFullscreenElement);
+        
+        // 检查Power BI特有的全屏模式（通过URL或DOM结构判断）
+        const powerbiFullscreen = window.location.href.includes('fullscreen=true') ||
+                                 document.querySelector('[data-testid="fullscreen-container"]') ||
+                                 document.querySelector('.fullscreen-mode') ||
+                                 document.body.classList.contains('fullscreen');
+        
+        const currentFullscreen = browserFullscreen || powerbiFullscreen;
+        
+        if (currentFullscreen !== isFullscreen) {
+            isFullscreen = currentFullscreen;
+            console.log('全屏状态变化:', isFullscreen ? '进入全屏' : '退出全屏');
+            
+            if (isFullscreen) {
+                // 进入全屏时自动隐藏指示器
+                hideIndicator();
+                showNotification('已进入全屏模式，指示器自动隐藏', 'info');
+            } else {
+                // 退出全屏时自动显示指示器
+                showIndicator();
+                showNotification('已退出全屏模式，指示器自动显示', 'info');
+            }
+        }
+    }
+
+    // 添加快捷键监听
+    function setupKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            // 检测 Shift + Alt + H
+            if (e.shiftKey && e.altKey && e.key.toLowerCase() === 'h') {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('检测到快捷键 Shift+Alt+H');
+                toggleIndicator();
+            }
+        });
+        
+        console.log('快捷键监听已设置: Shift+Alt+H 切换显示/隐藏');
+    }
+
+    // 设置全屏状态监听
+    function setupFullscreenListener() {
+        // 监听全屏变化事件
+        const fullscreenEvents = [
+            'fullscreenchange',
+            'webkitfullscreenchange', 
+            'mozfullscreenchange',
+            'msfullscreenchange'
+        ];
+        
+        fullscreenEvents.forEach(eventName => {
+            document.addEventListener(eventName, checkFullscreenStatus);
+        });
+        
+        // 定期检查全屏状态（备用方案）
+        setInterval(checkFullscreenStatus, 1000);
+        
+        console.log('全屏状态监听已设置');
     }
 
     // 工具函数：等待元素出现
@@ -530,6 +630,18 @@
                             下次刷新: <span id="countdown-text">--:--</span>
                         </div>
                         
+                        <div style="
+                            background: #e8f4fd;
+                            padding: 8px;
+                            border-radius: 5px;
+                            font-size: 12px;
+                            color: #2c3e50;
+                            margin-bottom: 10px;
+                        ">
+                            <strong>💡 快捷键:</strong> Shift+Alt+H 显示/隐藏指示器<br>
+                            <strong>🖥️ 全屏:</strong> 进入全屏自动隐藏，退出全屏自动显示
+                        </div>
+                        
                         <div style="display: flex; gap: 10px;">
                             <button id="manual-refresh" style="
                                 flex: 1;
@@ -881,8 +993,14 @@
         document.body.appendChild(indicator);
         console.log('状态指示器已创建并添加到页面');
         
+        // 保存指示器元素引用
+        indicatorElement = indicator;
+        
         // 为状态指示器添加拖动功能
         makeIndicatorDraggable(indicator);
+        
+        // 初始化时检查全屏状态
+        checkFullscreenStatus();
     }
 
     // 初始化脚本
@@ -892,6 +1010,12 @@
         // 检测页面类型
         currentPageType = detectPageType();
         console.log('当前页面类型:', currentPageType);
+
+        // 设置快捷键监听
+        setupKeyboardShortcuts();
+        
+        // 设置全屏状态监听
+        setupFullscreenListener();
 
         // 创建状态指示器
         createStatusIndicator();
@@ -931,6 +1055,9 @@
     GM_registerMenuCommand('立即刷新', manualRefresh);
     GM_registerMenuCommand('启动自动刷新', startAutoRefresh);
     GM_registerMenuCommand('停止自动刷新', stopAutoRefresh);
+    GM_registerMenuCommand('显示/隐藏指示器 (Shift+Alt+H)', toggleIndicator);
+    GM_registerMenuCommand('显示指示器', showIndicator);
+    GM_registerMenuCommand('隐藏指示器', hideIndicator);
 
     // 页面加载完成后初始化
     if (document.readyState === 'loading') {
