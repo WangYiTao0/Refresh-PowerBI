@@ -936,8 +936,56 @@
     }
   }
 
+  // 页面可见性处理
+  function setupVisibilityHandler() {
+    // 监听页面可见性变化
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        console.log('📱 页面重新可见，检查自动刷新状态');
+        checkAutoRefreshStatus();
+      } else {
+        console.log('📱 页面转入后台');
+      }
+    });
+
+    // 监听窗口焦点变化
+    window.addEventListener('focus', function() {
+      console.log('📱 窗口重新获得焦点，检查自动刷新状态');
+      checkAutoRefreshStatus();
+    });
+  }
+
+  // 检查自动刷新状态（页面重新可见时调用）
+  function checkAutoRefreshStatus() {
+    const startTime = GM_getValue('autoRefreshStartTime', null);
+    const interval = GM_getValue('autoRefreshInterval', null);
+    
+    if (startTime && interval) {
+      const elapsed = Date.now() - startTime;
+      const shouldHaveRefreshed = Math.floor(elapsed / interval);
+      
+      if (shouldHaveRefreshed > 0 && !isRefreshing) {
+        console.log(`⏰ 检测到在后台期间应该刷新 ${shouldHaveRefreshed} 次，立即执行刷新`);
+        manualRefresh();
+        // 重置计时器
+        GM_setValue('autoRefreshStartTime', Date.now());
+        countdownSeconds = interval / 1000;
+      } else {
+        // 更新倒计时
+        const remainingTime = interval - (elapsed % interval);
+        countdownSeconds = Math.ceil(remainingTime / 1000);
+        console.log(`⏰ 距离下次刷新还有 ${Math.ceil(remainingTime / 60000)} 分钟`);
+      }
+    }
+  }
+
   // 更新倒计时显示
   function updateCountdown() {
+    // 检查自动刷新状态以防止后台暂停
+    if (Math.random() < 0.1) { // 10%的概率检查，避免过于频繁
+      checkAutoRefreshStatus();
+    }
+
     const countdownElement = document.getElementById("countdown-text");
     if (countdownElement) {
       const minutes = Math.floor(countdownSeconds / 60);
@@ -959,19 +1007,81 @@
     const interval = GM_getValue("refreshInterval", 60) * 60 * 1000; // 转换为毫秒
     countdownSeconds = GM_getValue("refreshInterval", 60) * 60; // 转换为秒
 
+    // 记录启动时间
+    const startTime = Date.now();
+    GM_setValue('autoRefreshStartTime', startTime);
+    GM_setValue('autoRefreshInterval', GM_getValue("refreshInterval", 60) * 60 * 1000);
+
     refreshTimer = setInterval(() => {
       if (!isRefreshing) {
         manualRefresh();
         countdownSeconds = GM_getValue("refreshInterval", 60) * 60; // 重置倒计时
+        // 更新启动时间
+        GM_setValue('autoRefreshStartTime', Date.now());
       }
     }, interval);
 
-    // 启动倒计时显示
-    countdownTimer = setInterval(updateCountdown, 1000);
+    // 启动倒计时显示 - 使用更频繁的检查来对抗后台限制
+    countdownTimer = setInterval(updateCountdown, 500); // 500ms而不是1000ms
+
+    // 添加页面可见性检查
+    setupVisibilityHandler();
 
     console.log(
       `自动刷新已启动，间隔: ${GM_getValue("refreshInterval", 60)}分钟`
     );
+  }
+
+  // 创建后台工作保持机制
+  function createBackgroundKeepAlive() {
+    // 方法1: 使用audio元素保持页面活跃
+    const audio = document.createElement('audio');
+    audio.loop = true;
+    audio.volume = 0;
+    // 创建一个无声音频源
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    gainNode.gain.value = 0; // 无声
+    oscillator.frequency.value = 20000; // 超高频，人耳听不到
+    oscillator.start();
+    
+    console.log('🔊 后台保活音频已启动');
+
+    // 方法2: 定期发送空的fetch请求保持连接
+    setInterval(() => {
+      if (document.visibilityState === 'hidden') {
+        fetch(window.location.href, { 
+          method: 'HEAD',
+          cache: 'no-cache'
+        }).catch(() => {}); // 忽略错误
+      }
+    }, 30000); // 每30秒
+
+    // 方法3: 使用Web Locks API保持后台活跃（如果支持）
+    if ('locks' in navigator) {
+      navigator.locks.request('powerbi-refresh-lock', { mode: 'shared' }, () => {
+        return new Promise(() => {}); // 永不释放的锁
+      }).catch(() => {});
+      console.log('🔒 Web Locks后台保活已启动');
+    }
+
+    // 方法4: 使用SharedArrayBuffer和Atomics（如果支持）
+    if (typeof SharedArrayBuffer !== 'undefined') {
+      try {
+        const sab = new SharedArrayBuffer(4);
+        const view = new Int32Array(sab);
+        setInterval(() => {
+          Atomics.add(view, 0, 1);
+        }, 1000);
+        console.log('🧮 SharedArrayBuffer后台保活已启动');
+      } catch (e) {
+        console.log('SharedArrayBuffer不可用');
+      }
+    }
   }
 
   // 停止自动刷新
@@ -984,6 +1094,11 @@
       clearInterval(countdownTimer);
       countdownTimer = null;
     }
+    
+    // 清除保存的时间戳
+    GM_setValue('autoRefreshStartTime', null);
+    GM_setValue('autoRefreshInterval', null);
+    
     console.log("自动刷新已停止");
   }
 
@@ -1237,6 +1352,10 @@
       // 创建状态指示器
       createStatusIndicator();
       console.log("✅ 状态指示器创建完成");
+
+      // 启动后台保活机制
+      createBackgroundKeepAlive();
+      console.log("✅ 后台保活机制已启动");
 
       // 如果启用了自动刷新，启动定时器
       if (GM_getValue("autoRefreshEnabled", false)) {
