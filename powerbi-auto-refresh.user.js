@@ -765,30 +765,47 @@
                             </label>
                         </div>
                         
-                        <div style="margin-bottom: 10px;">
+                        <div style="margin-bottom: 15px;">
                             <label>${
                               currentPageType === "semantic-model"
-                                ? "Semantic Model 刷新间隔:"
+                                ? "📊 Semantic Model 刷新间隔 (分钟):"
                                 : currentPageType === "report"
-                                ? "Report 刷新间隔:"
-                                : "刷新间隔:"
+                                ? "📈 Report 刷新间隔 (分钟):"
+                                : "刷新间隔 (分钟):"
                             }</label>
-                            <select id="refresh-interval" style="width: 100%; padding: 5px; margin-top: 5px;">
-                                ${(() => {
-                                  const currentInterval = getCurrentRefreshInterval();
-                                  return `
-                                    <option value="1" ${currentInterval == 1 ? "selected" : ""}>1分钟 (测试)</option>
-                                    <option value="2" ${currentInterval == 2 ? "selected" : ""}>2分钟 (测试)</option>
-                                    <option value="5" ${currentInterval == 5 ? "selected" : ""}>5分钟</option>
-                                    <option value="10" ${currentInterval == 10 ? "selected" : ""}>10分钟</option>
-                                    <option value="15" ${currentInterval == 15 ? "selected" : ""}>15分钟</option>
-                                    <option value="30" ${currentInterval == 30 ? "selected" : ""}>30分钟</option>
-                                    <option value="60" ${currentInterval == 60 ? "selected" : ""}>1小时</option>
-                                    <option value="120" ${currentInterval == 120 ? "selected" : ""}>2小时</option>
-                                    <option value="180" ${currentInterval == 180 ? "selected" : ""}>3小时</option>
-                                  `;
-                                })()}
-                            </select>
+                            <div style="display: flex; gap: 5px; margin-top: 5px;">
+                                <input type="number" id="refresh-interval" min="1" max="1440" 
+                                       value="${getCurrentRefreshInterval()}"
+                                       style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                                       placeholder="输入分钟数">
+                                <button id="quick-set-1" style="
+                                    padding: 8px 12px;
+                                    background: #e74c3c;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 4px;
+                                    cursor: pointer;
+                                    font-size: 11px;
+                                ">1分钟</button>
+                                <button id="quick-set-5" style="
+                                    padding: 8px 12px;
+                                    background: #f39c12;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 4px;
+                                    cursor: pointer;
+                                    font-size: 11px;
+                                ">5分钟</button>
+                                <button id="quick-set-30" style="
+                                    padding: 8px 12px;
+                                    background: #27ae60;
+                                    color: white;
+                                    border: none;
+                                    border-radius: 4px;
+                                    cursor: pointer;
+                                    font-size: 11px;
+                                ">30分钟</button>
+                            </div>
                             <div style="
                                 font-size: 12px;
                                 color: #666;
@@ -797,29 +814,12 @@
                             ">
                                 ${
                                   currentPageType === "semantic-model"
-                                    ? "数据模型刷新通常需要较长间隔"
+                                    ? "建议: 60分钟以上，数据模型刷新较耗时"
                                     : currentPageType === "report"
-                                    ? "报表刷新可以设置较短间隔"
-                                    : "根据页面类型自动选择合适的间隔"
+                                    ? "建议: 15-30分钟，报表刷新相对较快"
+                                    : "输入1-1440之间的分钟数"
                                 }
                             </div>
-                        </div>
-                        
-                        <div style="margin-bottom: 10px;">
-                            <label>自定义间隔 (分钟):</label>
-                            <input type="number" id="custom-interval" min="1" max="1440" 
-                                   style="width: 100%; padding: 5px; margin-top: 5px;"
-                                   placeholder="输入自定义分钟数 (1-1440)">
-                            <button id="apply-custom" style="
-                                width: 100%; 
-                                padding: 5px; 
-                                margin-top: 5px;
-                                background: #f39c12;
-                                color: white;
-                                border: none;
-                                border-radius: 4px;
-                                cursor: pointer;
-                            ">应用自定义间隔</button>
                         </div>
                         
                         ${currentPageType !== "unknown" ? `
@@ -839,14 +839,70 @@
                     </div>
                     
                     <div style="margin-bottom: 20px;">
-                        <div id="countdown-display" style="
+                        <div style="
                             background: #f1f2f6;
-                            padding: 10px;
-                            border-radius: 5px;
-                            text-align: center;
+                            padding: 15px;
+                            border-radius: 8px;
                             margin-bottom: 10px;
                         ">
-                            下次刷新: <span id="countdown-text">--:--</span>
+                            <div style="
+                                font-weight: bold;
+                                margin-bottom: 10px;
+                                color: #2c3e50;
+                                text-align: center;
+                            ">⏰ 刷新倒计时</div>
+                            
+                            <div style="
+                                display: flex;
+                                justify-content: space-between;
+                                margin-bottom: 8px;
+                            ">
+                                <div style="
+                                    flex: 1;
+                                    background: ${currentPageType === "semantic-model" ? "#e8f4fd" : "#f8f9fa"};
+                                    padding: 8px;
+                                    border-radius: 5px;
+                                    text-align: center;
+                                    margin-right: 5px;
+                                    border: ${currentPageType === "semantic-model" ? "2px solid #3498db" : "1px solid #ddd"};
+                                ">
+                                    <div style="font-size: 12px; color: #e67e22; font-weight: bold;">📊 Semantic Model</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #2c3e50;">
+                                        <span id="semantic-countdown">--:--</span>
+                                    </div>
+                                    <div style="font-size: 10px; color: #666;">
+                                        间隔: ${GM_getValue("semanticModelInterval", 60)}分钟
+                                    </div>
+                                </div>
+                                
+                                <div style="
+                                    flex: 1;
+                                    background: ${currentPageType === "report" ? "#e8f4fd" : "#f8f9fa"};
+                                    padding: 8px;
+                                    border-radius: 5px;
+                                    text-align: center;
+                                    margin-left: 5px;
+                                    border: ${currentPageType === "report" ? "2px solid #3498db" : "1px solid #ddd"};
+                                ">
+                                    <div style="font-size: 12px; color: #3498db; font-weight: bold;">📈 Report</div>
+                                    <div style="font-size: 14px; font-weight: bold; color: #2c3e50;">
+                                        <span id="report-countdown">--:--</span>
+                                    </div>
+                                    <div style="font-size: 10px; color: #666;">
+                                        间隔: ${GM_getValue("reportInterval", 30)}分钟
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="
+                                font-size: 11px;
+                                color: #666;
+                                text-align: center;
+                                font-style: italic;
+                            ">
+                                ${currentPageType === "semantic-model" ? "📊 当前在 Semantic Model 页面" : 
+                                  currentPageType === "report" ? "📈 当前在 Report 页面" : "🔍 未识别的页面类型"}
+                            </div>
                         </div>
                         
                         <div style="
@@ -941,18 +997,37 @@
           console.error("❌ 保存按钮未找到");
         }
 
-        const customBtn = document.getElementById("apply-custom");
-        if (customBtn) {
-          customBtn.addEventListener("click", function (e) {
+        // 绑定快速设置按钮
+        const quickSet1 = document.getElementById("quick-set-1");
+        const quickSet5 = document.getElementById("quick-set-5");
+        const quickSet30 = document.getElementById("quick-set-30");
+        const intervalInput = document.getElementById("refresh-interval");
+
+        if (quickSet1) {
+          quickSet1.addEventListener("click", function (e) {
             e.preventDefault();
-            e.stopPropagation();
-            console.log("✅ 应用自定义间隔按钮被点击");
-            applyCustomInterval();
+            intervalInput.value = "1";
+            console.log("✅ 快速设置1分钟");
           });
-          console.log("✅ 自定义间隔按钮事件已绑定");
-        } else {
-          console.error("❌ 自定义间隔按钮未找到");
         }
+
+        if (quickSet5) {
+          quickSet5.addEventListener("click", function (e) {
+            e.preventDefault();
+            intervalInput.value = "5";
+            console.log("✅ 快速设置5分钟");
+          });
+        }
+
+        if (quickSet30) {
+          quickSet30.addEventListener("click", function (e) {
+            e.preventDefault();
+            intervalInput.value = "30";
+            console.log("✅ 快速设置30分钟");
+          });
+        }
+
+        console.log("✅ 快速设置按钮事件已绑定");
       } catch (eventError) {
         console.error("❌ 事件绑定失败:", eventError);
       }
@@ -1039,6 +1114,12 @@
       document.getElementById("refresh-interval").value
     );
 
+    // 验证输入
+    if (!refreshInterval || refreshInterval < 1 || refreshInterval > 1440) {
+      showNotification("请输入1-1440之间的有效分钟数", "error");
+      return;
+    }
+
     GM_setValue("autoRefreshEnabled", autoRefreshEnabled);
     
     // 保存到对应页面类型的间隔设置
@@ -1046,7 +1127,7 @@
 
     const pageTypeText = currentPageType === "semantic-model" ? "Semantic Model" : 
                         currentPageType === "report" ? "Report" : "当前页面";
-    showNotification(`${pageTypeText}设置已保存`, "success");
+    showNotification(`${pageTypeText}设置已保存 (${refreshInterval}分钟)`, "success");
 
     // 重启定时器
     if (autoRefreshEnabled) {
@@ -1131,22 +1212,35 @@
       }
     }
 
-    // 计算真实的倒计时时间
-    const countdownElement = document.getElementById("countdown-text");
-    if (countdownElement) {
-      const realCountdownSeconds = calculateRealCountdown();
-      
-      if (realCountdownSeconds > 0) {
-        const minutes = Math.floor(realCountdownSeconds / 60);
-        const seconds = realCountdownSeconds % 60;
-        countdownElement.textContent = `${minutes
-          .toString()
-          .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
-      } else if (GM_getValue("autoRefreshEnabled", false)) {
-        countdownElement.textContent = "即将刷新...";
-      } else {
-        countdownElement.textContent = "--:--";
-      }
+    // 更新 Semantic Model 倒计时
+    const semanticCountdownElement = document.getElementById("semantic-countdown");
+    if (semanticCountdownElement) {
+      const semanticCountdown = calculateRealCountdownForType("semantic-model");
+      semanticCountdownElement.textContent = formatCountdownTime(semanticCountdown, "semantic-model");
+    }
+
+    // 更新 Report 倒计时
+    const reportCountdownElement = document.getElementById("report-countdown");
+    if (reportCountdownElement) {
+      const reportCountdown = calculateRealCountdownForType("report");
+      reportCountdownElement.textContent = formatCountdownTime(reportCountdown, "report");
+    }
+  }
+
+  // 格式化倒计时时间显示
+  function formatCountdownTime(seconds, pageType) {
+    if (!GM_getValue("autoRefreshEnabled", false)) {
+      return "未启用";
+    }
+    
+    if (seconds > 0) {
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    } else if (currentPageType === pageType && isRefreshing) {
+      return "刷新中...";
+    } else {
+      return "即将刷新";
     }
   }
 
@@ -1166,25 +1260,41 @@
     return Math.ceil(remaining / 1000);
   }
 
+  // 计算特定页面类型的倒计时秒数
+  function calculateRealCountdownForType(pageType) {
+    if (!GM_getValue("autoRefreshEnabled", false)) {
+      return 0;
+    }
+
+    const startTimeKey = pageType === "semantic-model" ? 
+      'semanticModelStartTime' : 'reportStartTime';
+    const intervalKey = pageType === "semantic-model" ? 
+      'semanticModelInterval' : 'reportInterval';
+    
+    const startTime = GM_getValue(startTimeKey, null);
+    const intervalMinutes = GM_getValue(intervalKey, pageType === "semantic-model" ? 60 : 30);
+    const interval = intervalMinutes * 60 * 1000; // 转换为毫秒
+    
+    if (!startTime) {
+      // 如果没有启动时间，初始化为现在
+      GM_setValue(startTimeKey, Date.now());
+      return intervalMinutes * 60; // 返回完整间隔的秒数
+    }
+    
+    const now = Date.now();
+    const elapsed = now - startTime;
+    const remaining = interval - (elapsed % interval);
+    
+    return Math.ceil(remaining / 1000);
+  }
+
   // 启动自动刷新
   function startAutoRefresh() {
     stopAutoRefresh(); // 先停止现有的定时器
 
-    const intervalMinutes = getCurrentRefreshInterval();
-    const interval = intervalMinutes * 60 * 1000; // 转换为毫秒
-
-    // 记录启动时间
-    const startTime = Date.now();
-    GM_setValue('autoRefreshStartTime', startTime);
-    GM_setValue('autoRefreshInterval', interval);
-
-    refreshTimer = setInterval(() => {
-      if (!isRefreshing) {
-        manualRefresh();
-        // 更新启动时间为下一个周期
-        GM_setValue('autoRefreshStartTime', Date.now());
-      }
-    }, interval);
+    // 为每种页面类型设置独立的定时器和启动时间
+    setupAutoRefreshForType("semantic-model");
+    setupAutoRefreshForType("report");
 
     // 启动倒计时显示 - 使用更频繁的检查来对抗后台限制
     countdownTimer = setInterval(updateCountdown, 500); // 500ms而不是1000ms
@@ -1192,12 +1302,45 @@
     // 添加页面可见性检查
     setupVisibilityHandler();
 
-    const pageTypeText = currentPageType === "semantic-model" ? "Semantic Model" : 
-                        currentPageType === "report" ? "Report" : "当前页面";
-    console.log(`${pageTypeText}自动刷新已启动，间隔: ${intervalMinutes}分钟`);
+    console.log("自动刷新已启动，为所有页面类型设置独立定时器");
     
     // 立即更新一次倒计时显示
     updateCountdown();
+  }
+
+  // 为特定页面类型设置自动刷新
+  function setupAutoRefreshForType(pageType) {
+    const intervalKey = pageType === "semantic-model" ? 
+      'semanticModelInterval' : 'reportInterval';
+    const startTimeKey = pageType === "semantic-model" ? 
+      'semanticModelStartTime' : 'reportStartTime';
+    const timerKey = pageType === "semantic-model" ? 
+      'semanticModelTimer' : 'reportTimer';
+    
+    const intervalMinutes = GM_getValue(intervalKey, pageType === "semantic-model" ? 60 : 30);
+    const interval = intervalMinutes * 60 * 1000; // 转换为毫秒
+
+    // 记录启动时间
+    const startTime = Date.now();
+    GM_setValue(startTimeKey, startTime);
+
+    // 清除可能存在的旧定时器
+    const oldTimer = window[timerKey];
+    if (oldTimer) {
+      clearInterval(oldTimer);
+    }
+
+    // 设置新的定时器
+    window[timerKey] = setInterval(() => {
+      if (currentPageType === pageType && !isRefreshing) {
+        console.log(`⏰ ${pageType} 定时器触发，执行刷新`);
+        manualRefresh();
+        // 更新启动时间为下一个周期
+        GM_setValue(startTimeKey, Date.now());
+      }
+    }, interval);
+
+    console.log(`✅ ${pageType} 自动刷新已设置，间隔: ${intervalMinutes}分钟`);
   }
 
   // 创建后台工作保持机制
@@ -1254,18 +1397,33 @@
 
   // 停止自动刷新
   function stopAutoRefresh() {
+    // 清理旧的单一定时器
     if (refreshTimer) {
       clearInterval(refreshTimer);
       refreshTimer = null;
     }
-    if (countdownTimer) {
-      clearInterval(countdownTimer);
-      countdownTimer = null;
+    
+    // 清理页面类型特定的定时器
+    if (window.semanticModelTimer) {
+      clearInterval(window.semanticModelTimer);
+      window.semanticModelTimer = null;
     }
+    if (window.reportTimer) {
+      clearInterval(window.reportTimer);
+      window.reportTimer = null;
+    }
+    
+    // 不清理倒计时定时器，让它继续显示状态
+    // if (countdownTimer) {
+    //   clearInterval(countdownTimer);
+    //   countdownTimer = null;
+    // }
     
     // 清除保存的时间戳
     GM_setValue('autoRefreshStartTime', null);
     GM_setValue('autoRefreshInterval', null);
+    GM_setValue('semanticModelStartTime', null);
+    GM_setValue('reportStartTime', null);
     
     console.log("自动刷新已停止");
   }
