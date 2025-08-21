@@ -288,27 +288,51 @@
 
       // 3. 找到并点击 Refresh Now 按钮
       let refreshNowButton;
+      let clickSuccess = false;
+      
       try {
         refreshNowButton = await waitForElement(
           'button[title="Refresh now"]', 3000
         );
-        refreshNowButton.click();
-        console.log("点击了 Refresh Now 按钮");
+        console.log("找到英文 Refresh now 按钮");
+        
+        // 确保按钮可点击
+        if (refreshNowButton && !refreshNowButton.disabled) {
+          refreshNowButton.click();
+          console.log("✅ 成功点击了 Refresh Now 按钮");
+          clickSuccess = true;
+        } else {
+          throw new Error("Refresh now 按钮不可点击");
+        }
       } catch (error) {
-        console.log("⚠️ 未找到英文 Refresh now 按钮，尝试查找中文 立即刷新 按钮");
+        console.log("⚠️ 未找到或无法点击英文 Refresh now 按钮，尝试查找中文 立即刷新 按钮");
         try {
           refreshNowButton = await waitForElement(
-            'button[title="立即刷新"]'
+            'button[title="立即刷新"]', 5000
           );
-          refreshNowButton.click();
-          console.log("点击了 立即刷新 按钮");
+          console.log("找到中文 立即刷新 按钮");
+          
+          // 确保按钮可点击
+          if (refreshNowButton && !refreshNowButton.disabled) {
+            refreshNowButton.click();
+            console.log("✅ 成功点击了 立即刷新 按钮");
+            clickSuccess = true;
+          } else {
+            throw new Error("立即刷新 按钮不可点击");
+          }
         } catch (chineseError) {
-          console.error("中文按钮也未找到:", chineseError);
-          throw new Error("无法找到 Refresh now 或 立即刷新 按钮");
+          console.error("中文按钮也未找到或无法点击:", chineseError);
+          throw new Error("无法找到可点击的 Refresh now 或 立即刷新 按钮");
         }
       }
 
-      showNotification("已触发数据刷新，等待完成...", "success");
+      if (clickSuccess) {
+        showNotification("已触发数据刷新，等待完成...", "success");
+        // 点击后稍微等待，让UI稳定
+        await sleep(500);
+      } else {
+        throw new Error("刷新按钮点击失败");
+      }
 
       // 4. 等待刷新完成
       await sleep(CONFIG.REFRESH_WAIT_TIME);
