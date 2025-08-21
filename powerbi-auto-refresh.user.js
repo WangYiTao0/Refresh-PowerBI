@@ -287,11 +287,26 @@
       await sleep(CONFIG.MENU_EXPAND_WAIT);
 
       // 3. 找到并点击 Refresh Now 按钮
-      const refreshNowButton = await waitForElement(
-        'button[title="Refresh now"]'
-      );
-      refreshNowButton.click();
-      console.log("点击了 Refresh Now 按钮");
+      let refreshNowButton;
+      try {
+        refreshNowButton = await waitForElement(
+          'button[title="Refresh now"]', 3000
+        );
+        refreshNowButton.click();
+        console.log("点击了 Refresh Now 按钮");
+      } catch (error) {
+        console.log("⚠️ 未找到英文 Refresh now 按钮，尝试查找中文 立即刷新 按钮");
+        try {
+          refreshNowButton = await waitForElement(
+            'button[title="立即刷新"]'
+          );
+          refreshNowButton.click();
+          console.log("点击了 立即刷新 按钮");
+        } catch (chineseError) {
+          console.error("中文按钮也未找到:", chineseError);
+          throw new Error("无法找到 Refresh now 或 立即刷新 按钮");
+        }
+      }
 
       showNotification("已触发数据刷新，等待完成...", "success");
 
