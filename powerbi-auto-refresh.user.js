@@ -178,7 +178,7 @@
       document.querySelector(".fullscreen-mode") ||
       document.body.classList.contains("fullscreen");
 
-    const currentFullscreen = browserFullscreen || powerbiFullscreen;
+    const currentFullscreen = browserFullscreen && powerbiFullscreen;
 
     if (currentFullscreen !== isFullscreen) {
       isFullscreen = currentFullscreen;
@@ -388,13 +388,14 @@
       let refreshVisualsButton;
       try {
         refreshVisualsButton = await waitForElement(
-          "#reportAppBarRefreshBtn", 3000
+          "#reportAppBarRefreshBtn",
+          3000
         );
         refreshVisualsButton.click();
         console.log("点击了刷新视觉效果按钮");
       } catch (error) {
         console.log("⚠️ 未找到refresh visuals按钮，尝试点击More options按钮");
-        
+
         // 3. 备用方案：点击More options按钮
         try {
           const moreOptionsButton = await waitForElement(
@@ -402,19 +403,21 @@
           );
           moreOptionsButton.click();
           console.log("点击了More options按钮");
-          
+
           // 等待菜单展开
           await sleep(CONFIG.MENU_EXPAND_WAIT);
-          
+
           // 再次尝试找到refresh visuals按钮
           refreshVisualsButton = await waitForElement(
-            "#reportAppBarRefreshBtn"
+            'button[data-testid="appbar-right-refresh-button"]'
           );
           refreshVisualsButton.click();
           console.log("在More options菜单中找到并点击了refresh visuals按钮");
         } catch (moreOptionsError) {
           console.error("More options备用方案也失败:", moreOptionsError);
-          throw new Error("无法找到refresh visuals按钮，尝试了More options备用方案");
+          throw new Error(
+            "无法找到refresh visuals按钮，尝试了More options备用方案"
+          );
         }
       }
 
@@ -448,17 +451,17 @@
         document.msFullscreenElement
       );
 
-      if (!isBrowserFullscreen) {
-        console.log("⚠️ 检测到未进入浏览器全屏，自动触发F11");
-        showNotification(
-          "Power BI网页全屏已打开，正在进入浏览器全屏...",
-          "info"
-        );
-        simulateF11();
-        await sleep(500); // 等待F11生效
-      } else {
-        console.log("✅ 已成功进入浏览器全屏");
-      }
+      //   if (!isBrowserFullscreen) {
+      //     console.log("⚠️ 检测到未进入浏览器全屏，自动触发F11");
+      //     showNotification(
+      //       "Power BI网页全屏已打开，正在进入浏览器全屏...",
+      //       "info"
+      //     );
+      //     simulateF11();
+      //     await sleep(500); // 等待F11生效
+      //   } else {
+      //     console.log("✅ 已成功进入浏览器全屏");
+      //   }
 
       showNotification("Report 刷新完成并已切换到全屏模式", "success");
     } catch (error) {
